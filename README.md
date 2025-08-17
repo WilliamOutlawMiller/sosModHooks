@@ -12,7 +12,7 @@ Instead of traditional file replacement approaches that cause conflicts, this sy
 
 ## Prerequisites
 
-**⚠️ CRITICAL: Java 1.8 (Java 8) Runtime Required**
+**Java 1.8 (Java 8) Runtime Required**
 
 This modding system requires **Java 1.8 (Java 8)** for compatibility. It is not compatible with Java 9+ due to module system changes and bytecode version differences.
 
@@ -97,17 +97,17 @@ YourModName/                    # Project root directory
 └── _Info.txt                               # Mod metadata
 ```
 
-**Critical:** 
-- **DO NOT copy files from the sosModHooks directory** - those are framework components
-- **Create NEW files** using the provided templates
-- **Your mod is architecturally separate** from the modding framework
-- **⚠️ IMPORTANT:** The sosModHooks classes are NOT available at compile time - use reflection as shown in the examples below
+**Development Guidelines:**
+- Do not copy files from the sosModHooks directory - those are framework components
+- Create new files using the provided templates
+- Your mod is architecturally separate from the modding framework
+- The sosModHooks classes are not available at compile time - use reflection as shown in the examples below
 
-**Why Reflection is Required:**
-- **sosModHooks.jar** is loaded at **runtime** via the `-javaagent` parameter
-- **Your mod** is compiled **separately** in its own project
-- **At compile time**, the sosModHooks classes don't exist in your project's classpath
-- **Reflection** allows your mod to access the framework classes at runtime
+**Reflection Usage:**
+- sosModHooks.jar is loaded at runtime via the `-javaagent` parameter
+- Your mod is compiled separately in its own project
+- At compile time, the sosModHooks classes don't exist in your project's classpath
+- Reflection allows your mod to access the framework classes at runtime
 
 ### 2. Implement the Primary Entry Point
 
@@ -307,7 +307,7 @@ Author: Your Name
 
 **File:** `pom.xml`
 
-**⚠️ CRITICAL: Maven configuration MUST use Java 8 settings**
+**Maven configuration must use Java 8 settings**
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -425,10 +425,10 @@ public void initBeforeGameCreated() {
 
 ### Mandatory Components
 
-- **MainScript.java** - Primary entry point (implements `SCRIPT`) - REQUIRED
-- **InstanceScript.java** - Runtime instance management - REQUIRED
-- **Hook implementations** - Implement `GameClassHook` interface - REQUIRED
-- **Hook registration** - Call `HookSystem.registerHook()` in `initBeforeGameCreated()` - REQUIRED
+- **MainScript.java** - Primary entry point (implements `SCRIPT`)
+- **InstanceScript.java** - Runtime instance management
+- **Hook implementations** - Implement `GameClassHook` interface
+- **Hook registration** - Call `HookSystem.registerHook()` in `initBeforeGameCreated()`
 
 ### Project Architecture
 
@@ -440,8 +440,8 @@ YourModName/
 │   └── main/
 │       └── java/
 │           └── yourmod/                    # Change 'yourmod' to your package namespace
-│               ├── MainScript.java          # REQUIRED: Use template above
-│               ├── InstanceScript.java      # REQUIRED: Use template above
+│               ├── MainScript.java          # Use template above
+│               ├── InstanceScript.java      # Use template above
 │               └── hooks/                   # Create this directory
 │                   └── MyCustomHook.java    # Your hook implementation
 ├── pom.xml                                  # Use template above
@@ -478,7 +478,7 @@ mvn clean package
 - **Game crashes** → Review hook implementation for errors
 - **Mod not loading** → Verify `MainScript.java` implements `SCRIPT` correctly
 - **Framework not found** → Confirm `sosModHooks.jar` is in game directory
-- **Java version errors** → **MUST use Java 1.8 (Java 8)** - verify with `java -version`
+- **Java version errors** → Use Java 1.8 (Java 8) - verify with `java -version`
 - **"Unsupported class file version"** → Downgrade from Java 9+ to Java 8
 
 ## Summary
