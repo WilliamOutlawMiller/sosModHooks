@@ -8,151 +8,6 @@
     <artifactId>songs-of-syx-mod-example</artifactId>
     <version>1.0.0</version>
 
-    <profiles>
-        <profile>
-            <id>windows</id>
-            <properties>
-                <game.mod.directory>${user.home}/AppData/Roaming/songsofsyx/mods</game.mod.directory>
-                <game.workshop.directory>C:/Program Files (x86)/Steam/steamapps/workshop/content/1162750</game.workshop.directory>
-                <game.install.directory>C:/Program Files (x86)/Steam/steamapps/common/Songs of Syx</game.install.directory>
-                <game.mod.uploader.directory>${user.home}/AppData/Roaming/songsofsyx/mods-uploader</game.mod.uploader.directory>
-            </properties>
-            <activation>
-                <os>
-                    <family>windows</family>
-                </os>
-            </activation>
-        </profile>
-        <profile>
-            <id>linux</id>
-            <properties>
-                <game.mod.directory>${user.home}/.local/share/songsofsyx/mods</game.mod.directory>
-                <game.workshop.directory>${user.home}/.steam/steam/steamapps/workshop/content/1162750</game.workshop.directory>
-                <game.install.directory>${user.home}/.steam/steam/steamapps/common/Songs of Syx</game.install.directory>
-                <game.mod.uploader.directory>${user.home}/.local/share/songsofsyx/mods-uploader</game.mod.uploader.directory>
-            </properties>
-            <activation>
-                <os>
-                    <family>unix</family>
-                </os>
-            </activation>
-        </profile>
-        <profile>
-            <id>mod-sdk-steam</id>
-            <properties>
-                <mod.sdk.directory>${game.workshop.directory}/${mod.sdk.workshop.id}</mod.sdk.directory>
-            </properties>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
-        </profile>
-        <profile>
-            <id>mod-sdk</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-install-plugin</artifactId>
-                        <executions>
-                            <!-- Install mod-sdk jar as dependency code -->
-                            <execution>
-                                <id>install-mod-sdk-jar</id>
-                                <phase>validate</phase>
-                                <goals>
-                                    <goal>install-file</goal>
-                                </goals>
-                                <configuration>
-                                    <groupId>com.github.argon.sos</groupId>
-                                    <artifactId>sos-mod-sdk</artifactId>
-                                    <version>sdk-${mod.sdk.version}</version>
-                                    <packaging>jar</packaging>
-                                    <file>${mod.sdk.jar.directory}/${mod.sdk.name}.jar</file>
-                                    <generatePom>true</generatePom>
-                                </configuration>
-                            </execution>
-
-                            <!-- Install mod-sdk source jar as dependency code -->
-                            <execution>
-                                <id>install-mod-sdk-sources-jar</id>
-                                <phase>validate</phase>
-                                <goals>
-                                    <goal>install-file</goal>
-                                </goals>
-                                <configuration>
-                                    <groupId>com.github.argon.sos</groupId>
-                                    <artifactId>sos-mod-sdk</artifactId>
-                                    <version>sdk-${mod.sdk.version}</version>
-                                    <packaging>jar</packaging>
-                                    <classifier>sources</classifier>
-                                    <file>${mod.sdk.jar.src.directory}/${mod.sdk.name}-sources.jar</file>
-                                    <generatePom>false</generatePom>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-            <dependencies>
-                <dependency>
-                    <groupId>com.github.argon.sos</groupId>
-                    <artifactId>sos-mod-sdk</artifactId>
-                    <version>sdk-${mod.sdk.version}</version>
-                </dependency>
-            </dependencies>
-        </profile>
-        <profile>
-            <id>mods-uploader</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-clean-plugin</artifactId>
-                        <configuration>
-                            <filesets>
-                                <fileset>
-                                    <!-- Remove installed mod from mod uploader directory on clean -->
-                                    <directory>${mod.uploader.directory}</directory>
-                                    <includes>
-                                        <!-- Deletes mod folder with files -->
-                                        <include>**</include>
-                                    </includes>
-                                    <followSymlinks>false</followSymlinks>
-                                </fileset>
-                            </filesets>
-                        </configuration>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-resources-plugin</artifactId>
-                        <executions>
-                            <!-- Copy the mod files into the mod uploader folder -->
-                            <execution>
-                                <id>copy-mod-to-mod-uploader</id>
-                                <phase>install</phase>
-                                <goals>
-                                    <goal>copy-resources</goal>
-                                </goals>
-                                <configuration>
-                                    <outputDirectory>${mod.uploader.directory}</outputDirectory>
-                                    <includeEmptyDirs>true</includeEmptyDirs>
-                                    <overwrite>true</overwrite>
-                                    <resources>
-                                        <resource>
-                                            <directory>${mod.build.output.directory}</directory>
-                                            <excludes>
-                                                <exclude>**/_src/**</exclude>
-                                            </excludes>
-                                        </resource>
-                                    </resources>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
-
     <properties>
         <!-- Songs of Syx uses Java 1.8 -->
         <maven.compiler.target>1.8</maven.compiler.target>
@@ -161,46 +16,24 @@
 
         <!-- These settings will go into the mods _Info.txt file -->
         <mod.version>${project.version}</mod.version>
-        <mod.name>Example Mod</mod.name>
-        <mod.description>This is an example mod made by Jake the game developer.</mod.description>
-        <mod.author>Jake</mod.author>
-        <mod.info>Example</mod.info>
-        <!--
-            This is the game version you are currently using. When the game updates:
-            * Download the new game version if you don't have it
-            * Check the version of the game by launching it
-            * Run a "mvn clean" for removing up the old version
-            * Change the version here
-            * Run a "mvn validate" to install the new version in the local maven repository
-            * Maven is then able to find and resolve the new Songs of Syx code
-         -->
+        <mod.name>sosModHooks</mod.name>
+        <mod.description>Songs of Syx Mod Hook System - Enables ASM-based modding</mod.description>
+        <mod.author>Mod Community</mod.author>
+        <mod.info>ModHookSystem</mod.info>
+        
+        <!-- Game version you are currently using -->
         <game.version.major>69</game.version.major>
         <game.version.minor>38</game.version.minor>
 
-        <!-- Mod SDK (this only applies when "mod-sdk" profile is enabled) -->
+        <!-- Mod SDK settings -->
         <mod.sdk.version>0</mod.sdk.version>
         <mod.sdk.name>Mod SDK V${mod.sdk.version}</mod.sdk.name>
         <mod.sdk.workshop.id>3331182511</mod.sdk.workshop.id>
-        <mod.sdk.directory>${game.mod.directory}/${mod.sdk.name}</mod.sdk.directory>
-        <mod.sdk.jar.directory>${mod.sdk.directory}/${game.version.directory}/script</mod.sdk.jar.directory>
-        <mod.sdk.jar.src.directory>${mod.sdk.jar.directory}/_src</mod.sdk.jar.src.directory>
-
 
         <!-- Build settings -->
         <game.version.directory>V${game.version.major}</game.version.directory>
         <game.jar.name>SongsOfSyx.jar</game.jar.name>
         <game.jar.source.name>SongsOfSyx-sources.jar</game.jar.source.name>
-        <game.mod.uploader.content.directory>${game.mod.uploader.directory}/WorkshopContent</game.mod.uploader.content.directory>
-
-        <mod.files.name>mod-files</mod.files.name>
-        <mod.install.directory>${game.mod.directory}/${mod.name}</mod.install.directory>
-        <mod.uploader.directory>${game.mod.uploader.content.directory}/${mod.name}</mod.uploader.directory>
-        <mod.dependency.lib.directory>${project.basedir}/lib</mod.dependency.lib.directory>
-        <mod.build.output.directory>${basedir}/target/out/${mod.name}</mod.build.output.directory>
-        <mod.files.build.output.directory>${mod.build.output.directory}/${game.version.directory}</mod.files.build.output.directory>
-        <mod.script.output.directory>${mod.files.build.output.directory}/script</mod.script.output.directory>
-        <mod.source.output.directory>${mod.files.build.output.directory}/script/_src</mod.source.output.directory>
-        <mod.files.directory>${project.basedir}/src/main/resources/${mod.files.name}</mod.files.directory>
 
         <!-- Dependency versions -->
         <junit-jupiter-engine.version>5.9.2</junit-jupiter-engine.version>
@@ -219,13 +52,18 @@
     </properties>
 
     <dependencies>
-        <!-- Game dependency SongsOfSyx.jar -->
+        <!-- ASM for bytecode manipulation -->
         <dependency>
-            <groupId>com.songsofsyx</groupId>
-            <artifactId>songsofsyx</artifactId>
-            <version>${game.version.major}.${game.version.minor}</version>
+            <groupId>org.ow2.asm</groupId>
+            <artifactId>asm</artifactId>
+            <version>9.5</version>
         </dependency>
-
+        <dependency>
+            <groupId>org.ow2.asm</groupId>
+            <artifactId>asm-commons</artifactId>
+            <version>9.5</version>
+        </dependency>
+        
         <!-- Lazy Developer -->
         <dependency>
             <groupId>org.projectlombok</groupId>
@@ -253,18 +91,156 @@
             <version>${assertj-core.version}</version>
             <scope>test</scope>
         </dependency>
+        
+        <!-- Game dependencies - uncommented for development -->
+        <dependency>
+            <groupId>com.songsofsyx</groupId>
+            <artifactId>songsofsyx</artifactId>
+            <version>${game.version.major}.${game.version.minor}</version>
+        </dependency>
     </dependencies>
 
-    <build>
-        <!-- Always use the same name for the jar file -->
-        <finalName>${mod.name}</finalName>
+    <profiles>
+        <profile>
+            <id>windows</id>
+            <properties>
+                <game.mod.directory>${user.home}/AppData/Roaming/songsofsyx/mods</game.mod.directory>
+                <game.workshop.directory>C:/Program Files (x86)/Steam/steamapps/workshop/content/1162750</game.workshop.directory>
+                <game.install.directory>C:/Program Files (x86)/Steam/steamapps/common/Songs of Syx</game.install.directory>
+                <game.mod.uploader.directory>${user.home}/AppData/Roaming/songsofsyx/mods-uploader</game.mod.uploader.directory>
+            </properties>
+            <activation>
+                <os>
+                    <family>windows</family>
+                </os>
+            </activation>
+        </profile>
+        
+        <profile>
+            <id>linux</id>
+            <properties>
+                <game.mod.directory>${user.home}/.local/share/songsofsyx/mods</game.mod.directory>
+                <game.workshop.directory>${user.home}/.steam/steam/steamapps/workshop/content/1162750</game.workshop.directory>
+                <game.install.directory>${user.home}/.steam/steam/steamapps/common/Songs of Syx</game.install.directory>
+                <game.mod.uploader.directory>${user.home}/.local/share/songsofsyx/mods-uploader</game.mod.uploader.directory>
+            </properties>
+            <activation>
+                <os>
+                    <family>unix</family>
+                </os>
+            </activation>
+        </profile>
+        
+        <!-- Mod SDK Steam profile - commented out until mod-sdk is installed -->
+        <!--
+        <profile>
+            <id>mod-sdk-steam</id>
+            <properties>
+                <mod.sdk.directory>${game.workshop.directory}/${mod.sdk.workshop.id}</mod.sdk.directory>
+            </properties>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+        </profile>
+        -->
+        
+        <!-- Mod SDK profile - commented out until mod-sdk is installed -->
+        <!--
+        <profile>
+            <id>mod-sdk</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-install-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>install-mod-sdk-jar</id>
+                                <phase>validate</phase>
+                                <goals>
+                                    <goal>install-file</goal>
+                                </goals>
+                                <configuration>
+                                    <groupId>com.github.argon.sos</groupId>
+                                    <artifactId>sos-mod-sdk</artifactId>
+                                    <version>sdk-${mod.sdk.version}</version>
+                                    <packaging>jar</packaging>
+                                    <file>${mod.sdk.directory}/${game.version.directory}/script/${mod.sdk.name}.jar</file>
+                                    <generatePom>true</generatePom>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+            <dependencies>
+                <dependency>
+                    <groupId>com.github.argon.sos</groupId>
+                    <artifactId>sos-mod-sdk</artifactId>
+                    <version>sdk-${mod.sdk.version}</version>
+                </dependency>
+            </dependencies>
+        </profile>
+        -->
+        
+        <profile>
+            <id>mods-uploader</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-clean-plugin</artifactId>
+                        <configuration>
+                            <filesets>
+                                <fileset>
+                                    <directory>${game.mod.uploader.directory}</directory>
+                                    <includes>
+                                        <include>**</include>
+                                    </includes>
+                                    <followSymlinks>false</followSymlinks>
+                                </fileset>
+                            </filesets>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-resources-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>copy-mod-to-mod-uploader</id>
+                                <phase>install</phase>
+                                <goals>
+                                    <goal>copy-resources</goal>
+                                </goals>
+                                <configuration>
+                                    <outputDirectory>${game.mod.uploader.directory}</outputDirectory>
+                                    <includeEmptyDirs>true</includeEmptyDirs>
+                                    <overwrite>true</overwrite>
+                                    <resources>
+                                        <resource>
+                                            <directory>${project.build.directory}/out/${mod.name}</directory>
+                                            <excludes>
+                                                <exclude>**/_src/**</exclude>
+                                            </excludes>
+                                        </resource>
+                                    </resources>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 
-        <!-- We don't need the mod-files in our mod jar -->
+    <build>
+        <finalName>${mod.name}</finalName>
+        
         <resources>
             <resource>
                 <directory>src/main/resources</directory>
                 <excludes>
-                    <exclude>${mod.files.name}/**</exclude>
+                    <exclude>mod-files/**</exclude>
                 </excludes>
                 <filtering>false</filtering>
             </resource>
@@ -301,8 +277,7 @@
         </pluginManagement>
 
         <plugins>
-
-            <!-- Build a fat / uber jar containing all dependencies -->
+            <!-- Build a fat jar containing all dependencies -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
@@ -324,16 +299,31 @@
                 </executions>
             </plugin>
 
+            <!-- Configure JAR plugin for Java agent -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <archive>
+                        <manifestEntries>
+                            <Premain-Class>sosModHooks.HookAgent</Premain-Class>
+                            <Agent-Class>sosModHooks.HookAgent</Agent-Class>
+                            <Can-Redefine-Classes>true</Can-Redefine-Classes>
+                            <Can-Retransform-Classes>true</Can-Retransform-Classes>
+                        </manifestEntries>
+                    </archive>
+                </configuration>
+            </plugin>
+
+            <!-- Clean installed mod from game folder -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-clean-plugin</artifactId>
                 <configuration>
                     <filesets>
                         <fileset>
-                            <!-- Remove installed mod from games mod folder on clean -->
-                            <directory>${mod.install.directory}</directory>
+                            <directory>${game.mod.directory}/${mod.name}</directory>
                             <includes>
-                                <!-- Deletes mod folder with files -->
                                 <include>**</include>
                             </includes>
                             <followSymlinks>false</followSymlinks>
@@ -342,12 +332,11 @@
                 </configuration>
             </plugin>
 
-            <!-- Prepare game dependencies (thx @ https://github.com/MilanDierick for pointing me to the game source files) -->
+            <!-- Install game dependencies when needed -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-install-plugin</artifactId>
                 <executions>
-                    <!-- Install game jar as dependency code -->
                     <execution>
                         <id>install-game-jar</id>
                         <phase>validate</phase>
@@ -363,8 +352,8 @@
                             <generatePom>true</generatePom>
                         </configuration>
                     </execution>
-
-                    <!-- Install game source jar as dependency code -->
+                    
+                    <!-- Install game source jar -->
                     <execution>
                         <id>install-game-sources-jar</id>
                         <phase>validate</phase>
@@ -384,7 +373,7 @@
                 </executions>
             </plugin>
 
-            <!-- Attach mod source code -->
+            <!-- Attach source code -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-source-plugin</artifactId>
@@ -404,8 +393,7 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-resources-plugin</artifactId>
                 <executions>
-
-                    <!-- Copy files such as assets from the resources source-->
+                    <!-- Copy mod files -->
                     <execution>
                         <id>copy-mod-files</id>
                         <phase>package</phase>
@@ -413,13 +401,12 @@
                             <goal>copy-resources</goal>
                         </goals>
                         <configuration>
-                            <outputDirectory>${mod.files.build.output.directory}</outputDirectory>
+                            <outputDirectory>${project.build.directory}/out/${mod.name}/${game.version.directory}</outputDirectory>
                             <includeEmptyDirs>true</includeEmptyDirs>
                             <resources>
                                 <resource>
-                                    <directory>${mod.files.directory}</directory>
+                                    <directory>src/main/resources/mod-files</directory>
                                     <excludes>
-                                        <!-- Everything beginning with a dot -->
                                         <exclude>**/.*</exclude>
                                         <exclude>_Info.txt</exclude>
                                     </excludes>
@@ -428,7 +415,7 @@
                         </configuration>
                     </execution>
 
-                    <!-- Copy mod _Info.txt file and replace tokens -->
+                    <!-- Copy mod info file -->
                     <execution>
                         <id>copy-mod-info</id>
                         <phase>package</phase>
@@ -436,11 +423,11 @@
                             <goal>copy-resources</goal>
                         </goals>
                         <configuration>
-                            <outputDirectory>${mod.build.output.directory}</outputDirectory>
+                            <outputDirectory>${project.build.directory}/out/${mod.name}</outputDirectory>
                             <includeEmptyDirs>true</includeEmptyDirs>
                             <resources>
                                 <resource>
-                                    <directory>${mod.files.directory}</directory>
+                                    <directory>src/main/resources/mod-files</directory>
                                     <includes>
                                         <include>_Info.txt</include>
                                     </includes>
@@ -450,7 +437,7 @@
                         </configuration>
                     </execution>
 
-                    <!-- Copy the actual compiled jar into the correct folder -->
+                    <!-- Copy compiled jar to mod script folder -->
                     <execution>
                         <id>copy-mod-script-jar</id>
                         <phase>package</phase>
@@ -458,7 +445,7 @@
                             <goal>copy-resources</goal>
                         </goals>
                         <configuration>
-                            <outputDirectory>${mod.script.output.directory}</outputDirectory>
+                            <outputDirectory>${project.build.directory}/out/${mod.name}/${game.version.directory}/script</outputDirectory>
                             <includeEmptyDirs>true</includeEmptyDirs>
                             <resources>
                                 <resource>
@@ -479,7 +466,8 @@
                             <goal>copy-resources</goal>
                         </goals>
                         <configuration>
-                            <outputDirectory>${mod.source.output.directory}</outputDirectory>
+                            <outputDirectory>${project.build.directory}/out/${mod.name}/${game.version.directory}/script/_src</outputDirectory>
+                            <includeEmptyDirs>true</includeEmptyDirs>
                             <resources>
                                 <resource>
                                     <directory>${project.build.directory}</directory>
@@ -491,7 +479,7 @@
                         </configuration>
                     </execution>
 
-                    <!-- Copy the mod files into the game -->
+                    <!-- Install mod to game -->
                     <execution>
                         <id>copy-mod-to-game</id>
                         <phase>install</phase>
@@ -499,12 +487,12 @@
                             <goal>copy-resources</goal>
                         </goals>
                         <configuration>
-                            <outputDirectory>${mod.install.directory}</outputDirectory>
+                            <outputDirectory>${game.mod.directory}/${mod.name}</outputDirectory>
                             <includeEmptyDirs>true</includeEmptyDirs>
                             <overwrite>true</overwrite>
                             <resources>
                                 <resource>
-                                    <directory>${mod.build.output.directory}</directory>
+                                    <directory>${project.build.directory}/out/${mod.name}</directory>
                                     <excludes>
                                         <exclude>**/_src/**</exclude>
                                     </excludes>
