@@ -102,6 +102,7 @@ YourModName/                    # Project root directory
 - Create new files using the provided templates
 - Your mod is architecturally separate from the modding framework
 - The sosModHooks classes are not available at compile time - use reflection as shown in the examples below
+- Your hook classes are plain Java classes - they don't need to implement sosModHooks interfaces
 
 **Reflection Usage:**
 - sosModHooks.jar is loaded at runtime via the `-javaagent` parameter
@@ -137,16 +138,18 @@ public class MainScript implements SCRIPT {
         try {
             // Initialize the hook framework using reflection
             Class<?> hookSystemClass = Class.forName("sosModHooks.HookSystem");
-            Object hookSystem = hookSystemClass.getMethod("initialize").invoke(null);
+            hookSystemClass.getMethod("initialize").invoke(null);
             
-            // Register hook interceptors using reflection
-            Class<?> gameClassHookClass = Class.forName("sosModHooks.hooks.GameClassHook");
-            Object myHook = new MyCustomHook("GameHook");
+            // Create and register hook interceptors using reflection
+            Class<?> gameClassHookInterface = Class.forName("sosModHooks.hooks.GameClassHook");
+            MyCustomHook gameHook = new MyCustomHook("GameHook");
+            MyCustomHook settlementHook = new MyCustomHook("SettlementHook");
             
-            hookSystemClass.getMethod("registerHook", String.class, gameClassHookClass)
-                .invoke(null, "game.GAME", myHook);
-            hookSystemClass.getMethod("registerHook", String.class, gameClassHookClass)
-                .invoke(null, "settlement.main.SETT", myHook);
+            // Register hooks for different game classes
+            hookSystemClass.getMethod("registerHook", String.class, gameClassHookInterface)
+                .invoke(null, "game.GAME", gameHook);
+            hookSystemClass.getMethod("registerHook", String.class, gameClassHookInterface)
+                .invoke(null, "settlement.main.SETT", settlementHook);
             
             System.out.println("Your Mod initialized successfully!");
         } catch (Exception e) {
@@ -254,6 +257,8 @@ final class InstanceScript implements SCRIPT.SCRIPT_INSTANCE {
 ### 4. Implement Hook Interceptors
 
 **File:** `src/main/java/yourmod/hooks/MyCustomHook.java`
+
+**Note:** This is a custom class you create in your mod project. It does not extend or implement any sosModHooks interfaces - the framework handles the interface implementation at runtime.
 
 ```java
 package yourmod.hooks;
@@ -380,24 +385,29 @@ Here's a sophisticated example that demonstrates settlement modification:
 ```java
 package yourmod.hooks;
 
-import sosModHooks.hooks.GameClassHook;
-
-public class SettlementMod implements GameClassHook {
+public class SettlementMod {
     
-    @Override
+    private final String hookName;
+    
+    public SettlementMod(String hookName) {
+        this.hookName = hookName;
+    }
+    
+    // These methods will be called by the hook system at runtime
+    // The sosModHooks framework will handle the interface implementation
+    
     public void beforeCreate(Object instance) {
         // Pre-instantiation logic
-        System.out.println("Preparing settlement instantiation...");
+        System.out.println("[" + hookName + "] Preparing settlement instantiation...");
         
         // Add your pre-instantiation logic here
         // Example: Initialize settlement-specific state
     }
     
-    @Override
     public void afterCreate(Object instance) {
         // Post-instantiation logic
         if (instance != null) {
-            System.out.println("Settlement instantiated: " + 
+            System.out.println("[" + hookName + "] Settlement instantiated: " + 
                 instance.getClass().getSimpleName());
             
             // Add your post-instantiation logic here
@@ -407,17 +417,28 @@ public class SettlementMod implements GameClassHook {
 }
 ```
 
-**Hook registration in MainScript.java:**
+**Hook registration in MainScript.java (using reflection):**
 
 ```java
 @Override
 public void initBeforeGameCreated() {
-    HookSystem.initialize();
-    
-    // Register settlement modification hook
-    HookSystem.registerHook("settlement.main.SETT", new SettlementMod());
-    
-    System.out.println("Settlement Mod initialized successfully!");
+    try {
+        // Initialize the hook framework using reflection
+        Class<?> hookSystemClass = Class.forName("sosModHooks.HookSystem");
+        hookSystemClass.getMethod("initialize").invoke(null);
+        
+        // Register settlement modification hook using reflection
+        Class<?> gameClassHookInterface = Class.forName("sosModHooks.hooks.GameClassHook");
+        SettlementMod settlementHook = new SettlementMod("SettlementMod");
+        
+        hookSystemClass.getMethod("registerHook", String.class, gameClassHookInterface)
+            .invoke(null, "settlement.main.SETT", settlementHook);
+        
+        System.out.println("Settlement Mod initialized successfully!");
+    } catch (Exception e) {
+        System.err.println("Failed to initialize settlement mod: " + e.getMessage());
+        e.printStackTrace();
+    }
 }
 ```
 
