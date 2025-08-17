@@ -101,6 +101,13 @@ YourModName/                    # Project root directory
 - **DO NOT copy files from the sosModHooks directory** - those are framework components
 - **Create NEW files** using the provided templates
 - **Your mod is architecturally separate** from the modding framework
+- **⚠️ IMPORTANT:** The sosModHooks classes are NOT available at compile time - use reflection as shown in the examples below
+
+**Why Reflection is Required:**
+- **sosModHooks.jar** is loaded at **runtime** via the `-javaagent` parameter
+- **Your mod** is compiled **separately** in its own project
+- **At compile time**, the sosModHooks classes don't exist in your project's classpath
+- **Reflection** allows your mod to access the framework classes at runtime
 
 ### 2. Implement the Primary Entry Point
 
@@ -110,8 +117,6 @@ YourModName/                    # Project root directory
 package yourmod;
 
 import script.SCRIPT;
-import sosModHooks.HookSystem;
-import yourmod.hooks.MyCustomHook;
 
 public class MainScript implements SCRIPT {
     
@@ -129,14 +134,25 @@ public class MainScript implements SCRIPT {
     
     @Override
     public void initBeforeGameCreated() {
-        // Initialize the hook framework
-        HookSystem.initialize();
-        
-        // Register hook interceptors
-        HookSystem.registerHook("game.GAME", new MyCustomHook("GameHook"));
-        HookSystem.registerHook("settlement.main.SETT", new MyCustomHook("SettlementHook"));
-        
-        System.out.println("Your Mod initialized successfully!");
+        try {
+            // Initialize the hook framework using reflection
+            Class<?> hookSystemClass = Class.forName("sosModHooks.HookSystem");
+            Object hookSystem = hookSystemClass.getMethod("initialize").invoke(null);
+            
+            // Register hook interceptors using reflection
+            Class<?> gameClassHookClass = Class.forName("sosModHooks.hooks.GameClassHook");
+            Object myHook = new MyCustomHook("GameHook");
+            
+            hookSystemClass.getMethod("registerHook", String.class, gameClassHookClass)
+                .invoke(null, "game.GAME", myHook);
+            hookSystemClass.getMethod("registerHook", String.class, gameClassHookClass)
+                .invoke(null, "settlement.main.SETT", myHook);
+            
+            System.out.println("Your Mod initialized successfully!");
+        } catch (Exception e) {
+            System.err.println("Failed to initialize mod: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
     
     @Override
@@ -242,9 +258,7 @@ final class InstanceScript implements SCRIPT.SCRIPT_INSTANCE {
 ```java
 package yourmod.hooks;
 
-import sosModHooks.hooks.GameClassHook;
-
-public class MyCustomHook implements GameClassHook {
+public class MyCustomHook {
     
     private final String hookName;
     
@@ -252,7 +266,9 @@ public class MyCustomHook implements GameClassHook {
         this.hookName = hookName;
     }
     
-    @Override
+    // These methods will be called by the hook system at runtime
+    // The sosModHooks framework will handle the interface implementation
+    
     public void beforeCreate(Object instance) {
         // Executes BEFORE constructor execution
         // instance will be null since the object isn't instantiated yet
@@ -262,7 +278,6 @@ public class MyCustomHook implements GameClassHook {
         // Example: Initialize global state, prepare resources
     }
     
-    @Override
     public void afterCreate(Object instance) {
         // Executes AFTER constructor execution
         // instance is the newly instantiated game object
