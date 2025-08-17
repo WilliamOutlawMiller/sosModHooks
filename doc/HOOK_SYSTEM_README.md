@@ -1,23 +1,27 @@
 # Songs of Syx Mod Hook System
 
-**A simple way to add mods to Songs of Syx without breaking other mods.**
+**Advanced ASM-based runtime code injection for conflict-free modding architecture.**
 
-## What This Does
+## Overview
 
-Instead of replacing game files (which causes conflicts), this system **injects your code** into the game while it's running. Multiple mods can hook the same game classes safely.
+This system implements a sophisticated **bytecode manipulation framework** that enables runtime modification of Songs of Syx without file replacement or conflicts. By leveraging Java's Instrumentation API and ASM bytecode engineering, multiple mods can safely intercept and modify game behavior simultaneously.
+
+## Technical Architecture
+
+Instead of traditional file replacement approaches that cause conflicts, this system **injects custom bytecode** into the JVM during class loading. The ASM framework transforms game classes at runtime, inserting hook calls that execute your custom logic without modifying the original game files.
 
 ## Prerequisites
 
-**⚠️ IMPORTANT: Java 1.8 (Java 8) Required**
+**⚠️ CRITICAL: Java 1.8 (Java 8) Runtime Required**
 
-This modding system requires **Java 1.8 (Java 8)** to work properly. It is not compatible with Java 9+ or newer versions.
+This modding system requires **Java 1.8 (Java 8)** for compatibility. It is not compatible with Java 9+ due to module system changes and bytecode version differences.
 
-**Check your Java version:**
+**Verify your Java version:**
 ```bash
 java -version
 ```
 
-**You should see something like:**
+**Expected output:**
 ```
 java version "1.8.0_xxx"
 Java(TM) SE Runtime Environment (build 1.8.0_xxx-bxxx)
@@ -26,22 +30,22 @@ Java HotSpot(TM) 64-Bit Server VM (build 25.xxx-bxxx, mixed mode)
 
 ## Installation
 
-### Step 1: Download the Modding Utility
+### Step 1: Deploy the Modding Framework
 
 1. **Download** `sosModHooks.jar` from the GitHub releases page
-2. **Place it** in your Songs of Syx game folder (same folder as `SongsOfSyx.jar`)
+2. **Deploy** to your Songs of Syx game directory (same location as `SongsOfSyx.jar`)
 
-**Your game folder should now look like this:**
+**Target directory structure:**
 ```
 Songs of Syx/
-├── SongsOfSyx.jar          # The game
-├── sosModHooks.jar         # The modding utility
-├── saves/                  # Game saves
-├── campaigns/              # Game campaigns
+├── SongsOfSyx.jar          # Primary game executable
+├── sosModHooks.jar         # Modding framework (deployed)
+├── saves/                  # Game save data
+├── campaigns/              # Campaign definitions
 └── other game files...
 ```
 
-### Step 2: Run the Game with the Utility
+### Step 2: Initialize the Framework
 
 **Windows (Command Prompt):**
 ```cmd
@@ -55,43 +59,50 @@ cd /home/username/games/songs-of-syx
 java -javaagent:sosModHooks.jar -jar SongsOfSyx.jar
 ```
 
-**Steam Users:**
+**Steam Integration:**
 1. Right-click Songs of Syx in Steam
 2. Properties → General → Launch Options
 3. Add: `-javaagent:sosModHooks.jar`
 4. Launch normally from Steam
 
-### Step 3: Verify Installation
+### Step 3: Verify Framework Initialization
 
-When the utility loads correctly, you'll see these messages in the console:
+When the framework loads successfully, you'll observe these diagnostic messages:
 ```
 HookAgent: Initializing ASM-based hook system...
-HookAgent: Successfully initialized hook system
+Hook system initialized with instrumentation from agent
 ```
 
-**That's it!** The modding utility is now installed and ready to use.
+**Framework deployment complete.** The bytecode transformation system is now operational.
 
-## Creating Your First Mod
+## Mod Development Framework
 
-Now that the utility is installed, you can create mods that use it. Here's how:
+With the framework deployed, you can now develop mods that leverage the runtime injection capabilities. Here's the development workflow:
 
-### 1. Create Your Mod Project Structure
+### 1. Establish Mod Project Architecture
+
+**Create a new mod project with this structure:**
 
 ```
-YourModName/                    # Create this new folder anywhere you want
+YourModName/                    # Project root directory
 ├── src/
 │   └── main/
 │       └── java/
-│           └── yourmod/
-│               ├── MainScript.java          # REQUIRED: Main entry point
-│               ├── InstanceScript.java      # REQUIRED: Game instance script
-│               └── hooks/
-│                   └── MyCustomHook.java    # Your hook implementation
-├── pom.xml                                  # Maven configuration
-└── _Info.txt                               # Mod info file
+│           └── yourmod/       # Package namespace
+│               ├── MainScript.java          # Primary entry point
+│               ├── InstanceScript.java      # Runtime instance management
+│               └── hooks/                   # Hook implementations
+│                   └── MyCustomHook.java    # Custom hook logic
+├── pom.xml                                  # Maven build configuration
+└── _Info.txt                               # Mod metadata
 ```
 
-### 2. Create Your Main Script (REQUIRED)
+**Critical:** 
+- **DO NOT copy files from the sosModHooks directory** - those are framework components
+- **Create NEW files** using the provided templates
+- **Your mod is architecturally separate** from the modding framework
+
+### 2. Implement the Primary Entry Point
 
 **File:** `src/main/java/yourmod/MainScript.java`
 
@@ -118,10 +129,10 @@ public class MainScript implements SCRIPT {
     
     @Override
     public void initBeforeGameCreated() {
-        // STEP 1: Initialize the hook system
+        // Initialize the hook framework
         HookSystem.initialize();
         
-        // STEP 2: Register your hooks
+        // Register hook interceptors
         HookSystem.registerHook("game.GAME", new MyCustomHook("GameHook"));
         HookSystem.registerHook("settlement.main.SETT", new MyCustomHook("SettlementHook"));
         
@@ -145,7 +156,7 @@ public class MainScript implements SCRIPT {
 }
 ```
 
-### 3. Create Your Instance Script (REQUIRED)
+### 3. Implement Runtime Instance Management
 
 **File:** `src/main/java/yourmod/InstanceScript.java`
 
@@ -224,7 +235,7 @@ final class InstanceScript implements SCRIPT.SCRIPT_INSTANCE {
 }
 ```
 
-### 4. Create Your Hook Class
+### 4. Implement Hook Interceptors
 
 **File:** `src/main/java/yourmod/hooks/MyCustomHook.java`
 
@@ -243,30 +254,30 @@ public class MyCustomHook implements GameClassHook {
     
     @Override
     public void beforeCreate(Object instance) {
-        // Runs BEFORE the constructor executes
-        // instance will be null since the object isn't created yet
-        System.out.println("[" + hookName + "] About to create game object");
+        // Executes BEFORE constructor execution
+        // instance will be null since the object isn't instantiated yet
+        System.out.println("[" + hookName + "] Pre-instantiation hook triggered");
         
-        // Add your pre-creation logic here
-        // Example: Set up global variables, prepare resources
+        // Add your pre-instantiation logic here
+        // Example: Initialize global state, prepare resources
     }
     
     @Override
     public void afterCreate(Object instance) {
-        // Runs AFTER the constructor executes
-        // instance is the newly created game object
+        // Executes AFTER constructor execution
+        // instance is the newly instantiated game object
         if (instance != null) {
-            System.out.println("[" + hookName + "] Created: " + 
+            System.out.println("[" + hookName + "] Post-instantiation hook triggered for: " + 
                 instance.getClass().getSimpleName());
             
-            // Add your post-creation logic here
-            // Example: Modify the object, add custom properties
+            // Add your post-instantiation logic here
+            // Example: Modify object state, inject custom properties
         }
     }
 }
 ```
 
-### 5. Create Your Mod Info File
+### 5. Define Mod Metadata
 
 **File:** `_Info.txt`
 
@@ -277,11 +288,11 @@ Version: 1.0.0
 Author: Your Name
 ```
 
-### 6. Build Your Mod
+### 6. Configure Build System
 
 **File:** `pom.xml`
 
-**⚠️ IMPORTANT: This pom.xml MUST use Java 8 settings**
+**⚠️ CRITICAL: Maven configuration MUST use Java 8 settings**
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -322,30 +333,32 @@ Author: Your Name
 </project>
 ```
 
-Then build:
+**Build the mod:**
 ```bash
 mvn clean package
-# Creates: target/your-mod-name-1.0.0.jar
+# Generates: target/your-mod-name-1.0.0.jar
 ```
 
-## How It Works
+## Technical Implementation Details
 
-1. **You install** the modding utility (`sosModHooks.jar`) into your game folder
-2. **Game starts** with the utility loaded via `-javaagent`
-3. **Your mods load** and register hooks via `MainScript`
-4. **Game loads classes** → Utility intercepts and modifies them
-5. **Your hooks run** → Every time those classes are instantiated
-6. **No conflicts** → Multiple mods can hook the same classes
+### Execution Flow
 
-## What You Can Hook
+1. **Framework Deployment** - `sosModHooks.jar` deploys to game directory
+2. **JVM Initialization** - Framework loads via `-javaagent` parameter
+3. **Mod Loading** - Your mod registers hooks via `MainScript`
+4. **Class Interception** - Framework intercepts class loading events
+5. **Bytecode Transformation** - ASM transforms classes, injecting hook calls
+6. **Hook Execution** - Your custom logic executes at runtime
+
+### Hook Interception Points
 
 - **Game classes** like `game.GAME`, `settlement.main.SETT`
-- **Any class** that gets instantiated during gameplay
-- **Constructors only** (when objects are created)
+- **Any instantiated class** during gameplay
+- **Constructor execution** (object instantiation lifecycle)
 
-## Example: Settlement Mod
+## Advanced Implementation Example
 
-Here's a complete working example that hooks into settlements:
+Here's a sophisticated example that demonstrates settlement modification:
 
 **File:** `src/main/java/yourmod/hooks/SettlementMod.java`
 
@@ -358,108 +371,110 @@ public class SettlementMod implements GameClassHook {
     
     @Override
     public void beforeCreate(Object instance) {
-        // Setup before settlement is created
-        System.out.println("Preparing settlement...");
+        // Pre-instantiation logic
+        System.out.println("Preparing settlement instantiation...");
         
-        // Add your pre-creation logic here
-        // Example: Initialize settlement-specific variables
+        // Add your pre-instantiation logic here
+        // Example: Initialize settlement-specific state
     }
     
     @Override
     public void afterCreate(Object instance) {
-        // Modify settlement after creation
+        // Post-instantiation logic
         if (instance != null) {
-            System.out.println("Settlement created: " + 
+            System.out.println("Settlement instantiated: " + 
                 instance.getClass().getSimpleName());
             
-            // Add your post-creation logic here
-            // Example: Modify settlement properties, add custom features
+            // Add your post-instantiation logic here
+            // Example: Modify settlement properties, inject custom features
         }
     }
 }
 ```
 
-**Then in your MainScript.java, add this line:**
+**Hook registration in MainScript.java:**
 
 ```java
 @Override
 public void initBeforeGameCreated() {
     HookSystem.initialize();
     
-    // Register your settlement hook
+    // Register settlement modification hook
     HookSystem.registerHook("settlement.main.SETT", new SettlementMod());
     
     System.out.println("Settlement Mod initialized successfully!");
 }
 ```
 
-## For Mod Developers
+## Development Requirements
 
-### Required Files (Copy These Exactly)
+### Mandatory Components
 
-- **MainScript.java** - Entry point (implements `SCRIPT`) - REQUIRED
-- **InstanceScript.java** - Game instance script - REQUIRED
-- **Your hook classes** - Implement `GameClassHook` - REQUIRED
-- **Registration** - Call `HookSystem.registerHook()` in `initBeforeGameCreated()` - REQUIRED
+- **MainScript.java** - Primary entry point (implements `SCRIPT`) - REQUIRED
+- **InstanceScript.java** - Runtime instance management - REQUIRED
+- **Hook implementations** - Implement `GameClassHook` interface - REQUIRED
+- **Hook registration** - Call `HookSystem.registerHook()` in `initBeforeGameCreated()` - REQUIRED
 
-### Project Structure (Follow This Exactly)
+### Project Architecture
+
+**Follow this structure exactly:**
 
 ```
 YourModName/
 ├── src/
 │   └── main/
 │       └── java/
-│           └── yourmod/                    # Change 'yourmod' to your package name
-│               ├── MainScript.java          # REQUIRED: Copy the template above
-│               ├── InstanceScript.java      # REQUIRED: Copy the template above
-│               └── hooks/                   # Create this folder
+│           └── yourmod/                    # Change 'yourmod' to your package namespace
+│               ├── MainScript.java          # REQUIRED: Use template above
+│               ├── InstanceScript.java      # REQUIRED: Use template above
+│               └── hooks/                   # Create this directory
 │                   └── MyCustomHook.java    # Your hook implementation
-├── pom.xml                                  # Copy the template above
-└── _Info.txt                               # Copy the template above
+├── pom.xml                                  # Use template above
+└── _Info.txt                               # Use template above
 ```
 
-### Building
+### Build Process
 
 ```bash
 mvn clean package
-# Creates: target/your-mod-name-1.0.0.jar
+# Generates: target/your-mod-name-1.0.0.jar
 ```
 
-## Why This Approach?
+## Architectural Advantages
 
-| Traditional Modding | This System |
-|---------------------|-------------|
-| ❌ Replace game files | ✅ Inject code |
-| ❌ Mod conflicts | ✅ Multiple mods work |
-| ❌ Game updates break mods | ✅ More resilient |
-| ❌ Complex setup | ✅ Simple registration |
+| Traditional Modding | This Framework |
+|---------------------|----------------|
+| ❌ File replacement conflicts | ✅ Runtime bytecode injection |
+| ❌ Mod incompatibilities | ✅ Simultaneous mod execution |
+| ❌ Update vulnerability | ✅ Framework resilience |
+| ❌ Complex integration | ✅ Clean hook registration |
 
 ## Common Use Cases
 
-- **Add new features** to existing game objects
-- **Modify behavior** without changing game code
-- **Log game events** for debugging
-- **Add custom logic** to game systems
+- **Runtime behavior modification** of existing game objects
+- **State injection** without altering game code
+- **Event logging and debugging** capabilities
+- **Custom logic integration** into game systems
 
 ## Troubleshooting
 
-- **"No instrumentation available"** → Make sure you're using `-javaagent:sosModHooks.jar`
-- **Hooks not running** → Check class names are correct
-- **Game crashes** → Check your hook code for errors
+- **"No instrumentation available"** → Verify `-javaagent:sosModHooks.jar` parameter
+- **Hooks not executing** → Validate class names and hook registration
+- **Game crashes** → Review hook implementation for errors
 - **Mod not loading** → Verify `MainScript.java` implements `SCRIPT` correctly
-- **Utility not found** → Make sure `sosModHooks.jar` is in the same folder as `SongsOfSyx.jar`
-- **Java version errors** → **MUST use Java 1.8 (Java 8)** - check with `java -version`
-- **"Unsupported class file version"** → You're using Java 9+ - downgrade to Java 8
+- **Framework not found** → Confirm `sosModHooks.jar` is in game directory
+- **Java version errors** → **MUST use Java 1.8 (Java 8)** - verify with `java -version`
+- **"Unsupported class file version"** → Downgrade from Java 9+ to Java 8
 
 ## Summary
 
-This system lets you **safely extend Songs of Syx** by injecting your code into the game at runtime. It's simple, safe, and compatible with other mods.
+This framework provides **enterprise-grade modding capabilities** through sophisticated bytecode manipulation, enabling safe and conflict-free extension of Songs of Syx. The ASM-based approach ensures runtime stability while maintaining full compatibility with existing mods.
 
-**Perfect for:** Mod developers who want to add features without breaking the game or other mods.
+**Ideal for:** Developers requiring robust, scalable modding solutions that integrate seamlessly with existing game architecture.
 
-**Remember:** 
-1. **First** install the modding utility (`sosModHooks.jar`) into your game folder
-2. **Then** run the game with `-javaagent:sosModHooks.jar`
-3. **Finally** create your mods using the templates above
+**Implementation workflow:** 
+1. **Deploy** the modding framework (`sosModHooks.jar`) to your game directory
+2. **Initialize** the framework with `-javaagent:sosModHooks.jar`
+3. **Develop** your mods using the provided templates and hook system
 
-Copy the template files exactly, change only the package names and class names, and your mod will work!
+**Copy the template implementations exactly, modify only package names and class names, and your mod will integrate seamlessly with the framework.**
