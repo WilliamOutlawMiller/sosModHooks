@@ -44,7 +44,7 @@ public class ModConflictReporter {
     /**
      * Show detailed conflict information
      */
-    public void showConflictDetails(ClassConflict conflict) {
+    public void showConflictDetails(ModConflict conflict) {
         StringBuilder message = new StringBuilder();
         message.append("Conflict Details:\n");
         message.append(conflict.getSummary()).append("\n");

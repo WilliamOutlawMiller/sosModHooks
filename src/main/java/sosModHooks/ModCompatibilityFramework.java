@@ -27,12 +27,10 @@ import java.util.Map;
  */
 public final class ModCompatibilityFramework {
 
-    private final ModCompatibilityScanner scanner;
     private final ModConflictReporter reporter;
     private final ModEnhancementManager enhancementManager;
 
     public ModCompatibilityFramework() {
-        this.scanner = new ModCompatibilityScanner();
         this.reporter = new ModConflictReporter();
         this.enhancementManager = new ModEnhancementManager();
         
@@ -56,8 +54,7 @@ public final class ModCompatibilityFramework {
                 try {
                     System.out.println("sosModHooks: Initializing mod registry at tick " + tickCounter);
                     
-                    // Auto-register detected mods from the old scanner for backward compatibility
-                    autoRegisterExistingMods();
+                    // Initialize mod registry
                     
                     // Detect conflicts using the new registry system
                     snake2d.util.sets.LIST<ModConflict> conflicts = ModRegistry.getInstance().detectConflicts();
@@ -154,8 +151,7 @@ public final class ModCompatibilityFramework {
          */
         private void autoRegisterExistingMods() {
             try {
-                // Use the old scanner to detect mods and register them automatically
-                scanner.scanForConflicts();
+                // This method has been removed - no longer needed
                 
                 // Get loaded scripts and register them with basic info
                 LIST<SCRIPT> loadedScripts = getLoadedScripts();
@@ -437,7 +433,8 @@ public final class ModCompatibilityFramework {
             renderCompatibilityStatus(r, screenWidth, screenHeight);
             
             // Render conflict details if any
-            if (scanner.hasConflicts()) {
+            ModCompatibilityAPI api = ModCompatibilityAPI.getInstance();
+            if (api.hasConflicts()) {
                 renderConflictDetails(r, screenWidth, screenHeight);
             }
             
