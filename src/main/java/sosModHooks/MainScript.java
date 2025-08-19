@@ -1,49 +1,71 @@
 package sosModHooks;
 
+import java.nio.file.Path;
+
+import lombok.NoArgsConstructor;
 import script.SCRIPT;
-import sosModHooks.hooks.ExampleHook;
+import settlement.room.main.util.RoomInitData;
+import util.info.INFO;
 
 /**
- * Main entry point for the mod.
- * This class is loaded by the game when the mod starts.
+ * Entry point for the mod.
+ * Contains some basic information about the mod.
+ * Used to set up your mod.
+ *
+ * See {@link SCRIPT} for some documentation.
  */
-public class MainScript implements SCRIPT {
-    
-    private final String info = "Songs of Syx Mod Hook System - Enables ASM-based modding";
-    
-    @Override
-    public CharSequence name() {
-        return "Mod Hook System";
-    }
-    
-    @Override
-    public CharSequence desc() {
-        return info;
-    }
-    
-    @Override
-    public void initBeforeGameCreated() {
-        // Initialize the hook system
-        HookSystem.initialize();
-        
-        // Register example hooks
-        ExampleHook.registerExamples();
-        
-        System.out.println("Mod Hook System initialized successfully!");
-    }
-    
-    @Override
-    public boolean isSelectable() {
-        return false; // This mod doesn't need to be selectable
-    }
-    
-    @Override
-    public boolean forceInit() {
-        return true; // Force initialization
-    }
-    
-    @Override
-    public SCRIPT_INSTANCE createInstance() {
-        return new InstanceScript();
-    }
+@NoArgsConstructor
+@SuppressWarnings("unused") // used by the game via reflection
+public final class MainScript implements SCRIPT {
+
+	/**
+	 * This info will be displayed when starting a new game and choosing a script
+	 */
+	private final INFO info = new INFO("sosModHooks", "Mod compatibility framework for Songs of Syx");
+
+	@Override
+	public CharSequence name() {
+		return info.name;
+	}
+
+	@Override
+	public CharSequence desc() {
+		return info.desc;
+	}
+
+	/**
+	 * Called before an actual game is started or loaded
+	 */
+	@Override
+	public void initBeforeGameCreated() {
+		System.out.println("sosModHooks: initBeforeGameCreated called");
+		// Key bindings will be initialized later when the KEYS system is ready
+		// during the update loop in ModCompatibilityFramework
+	}
+
+
+	/**
+	 * @return whether mod shall be selectable when starting a new game
+	 */
+	@Override
+	public boolean isSelectable() {
+		return SCRIPT.super.isSelectable();
+	}
+
+	/**
+	 * @return whether mod shall be loaded into existing saves or not
+	 */
+	@Override
+	public boolean forceInit() {
+		return SCRIPT.super.forceInit();
+	}
+
+	/**
+	 * This actually creates the "instance" of your script.
+	 */
+	@Override
+	public SCRIPT_INSTANCE createInstance() {
+		ModCompatibilityFramework framework = new ModCompatibilityFramework();
+		return framework.new CompatibilityFrameworkInstance();
+	}
 }

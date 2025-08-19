@@ -1,503 +1,276 @@
-# Songs of Syx Mod Hook System
-
-**Advanced ASM-based runtime code injection for conflict-free modding architecture.**
+# sosModHooks - Mod Compatibility Framework for Songs of Syx
 
 ## Overview
 
-This system implements a sophisticated **bytecode manipulation framework** that enables runtime modification of Songs of Syx without file replacement or conflicts. By leveraging Java's Instrumentation API and ASM bytecode engineering, multiple mods can safely intercept and modify game behavior simultaneously.
+sosModHooks is a comprehensive mod compatibility framework for Songs of Syx that provides real-time analysis, conflict detection, and compatibility monitoring for modded games. The framework operates entirely through script hooks, ensuring safe integration without modifying core game files.
 
-## Technical Architecture
+## What This Framework Does
 
-Instead of traditional file replacement approaches that cause conflicts, this system **injects custom bytecode** into the JVM during class loading. The ASM framework transforms game classes at runtime, inserting hook calls that execute your custom logic without modifying the original game files.
+### Core Functionality
 
-## Prerequisites
+The framework provides a comprehensive compatibility analysis system that:
 
-**Java 1.8 (Java 8) Runtime Required**
+1. **Registers Mod Declarations**: Allows mods to declare their changes and modifications through a standardized interface
+2. **Detects Compatibility Issues**: Identifies conflicts between mods through declared modifications and runtime analysis
+3. **Monitors Runtime Performance**: Tracks system health, memory usage, and error counts during gameplay
+4. **Provides User Interface**: Offers an in-game overlay (toggleable with F10) showing compatibility status and conflict details
+5. **Integrates with Game Systems**: Seamlessly integrates with the game's key binding settings and UI theming
 
-This modding system requires **Java 1.8 (Java 8)** for compatibility. It is not compatible with Java 9+ due to module system changes and bytecode version differences.
+### Conflict Detection Types
 
-**Verify your Java version:**
-```bash
-java -version
+The framework detects several types of compatibility issues:
+
+- **Class Replacement Conflicts**: Multiple mods replacing the same game class
+- **Asset Modification Conflicts**: Multiple mods modifying the same asset files
+- **Data Structure Conflicts**: Multiple mods modifying the same game data types
+- **Missing Dependencies**: Required mods that are not loaded
+- **Load Order Conflicts**: Conflicting mod loading sequences
+
+### Technical Architecture
+
+The framework consists of several key components:
+
+- **ModRegistry**: Central system for mod declarations and conflict detection
+- **ModCompatibilityAPI**: Public interface for modders to integrate with the framework
+- **ModCompatibilityFramework**: Main framework that coordinates all functionality
+- **ModCompatibilityScanner**: Analyzes loaded mods for conflicts using reflection
+- **ModConflictReporter**: Manages user interface and overlay display
+- **ModEnhancementManager**: Monitors runtime performance and system health
+- **ModKeyBindings**: Integrates with game's native key binding system
+
+### User Interface Features
+
+The framework provides a professional overlay interface that displays:
+
+- Overall compatibility status with conflict counts
+- System health score (0-100) with status indicators
+- Performance metrics including memory usage and error counts
+- Detailed conflict information for detected issues
+- Real-time monitoring data during gameplay
+
+## How Modders Use It
+
+### Integration Methods
+
+The framework supports two integration approaches:
+
+#### Method 1: Reflection-Based Discovery (Recommended)
+Mods can implement standard methods that the framework automatically discovers:
+
+```java
+public class YourModScript implements SCRIPT {
+    public String getModId() { return "your_mod_id"; }
+    public String getModName() { return "Your Mod Name"; }
+    public String getModVersion() { return "1.0.0"; }
+    
+    public String[] getClassReplacements() {
+        return new String[] { "settlement.room.food.farm.FarmInstance" };
+    }
+    
+    public String[] getAssetModifications() {
+        return new String[] { "/data/assets/sprite/race/face/addon" };
+    }
+    
+    public String[] getDataModifications() {
+        return new String[] { "FACTION", "RACE" };
+    }
+    
+    public String[] getDependencies() {
+        return new String[] { "required_mod" };
+    }
+}
 ```
 
-**Expected output:**
+#### Method 2: Direct API Integration
+Mods can directly use the framework's API (requires importing framework classes):
+
+```java
+import sosModHooks.ModCompatibilityAPI;
+
+ModCompatibilityAPI api = ModCompatibilityAPI.getInstance();
+api.registerMod("myMod", "My Awesome Mod", "1.0.0");
+api.declareClassReplacement("myMod", "settlement.room.food.farm.FarmInstance");
 ```
-java version "1.8.0_xxx"
-Java(TM) SE Runtime Environment (build 1.8.0_xxx-bxxx)
-Java HotSpot(TM) 64-Bit Server VM (build 25.xxx-bxxx, mixed mode)
-```
+
+### Declaration Types
+
+Mods can declare various types of modifications:
+
+- **Class Replacements**: Core game classes that are completely replaced
+- **Asset Modifications**: Sprite files, textures, sounds, and other assets
+- **Data Modifications**: Game data structures like factions, races, events
+- **Dependencies**: Other mods that are required for functionality
 
 ## Installation
 
-### Step 1: Deploy the Modding Framework
+### Prerequisites
 
-1. **Download** `sosModHooks.jar` from the GitHub releases page
-2. **Deploy** to your Songs of Syx game directory (same location as `SongsOfSyx.jar`)
+- Songs of Syx (tested with V69.38)
+- Java 8 or higher
+- Maven (for building from source)
 
-**Target directory structure:**
-```
-Songs of Syx/
-├── SongsOfSyx.jar          # Primary game executable
-├── sosModHooks.jar         # Modding framework (deployed)
-├── saves/                  # Game save data
-├── campaigns/              # Campaign definitions
-└── other game files...
-```
+### Build and Install
 
-### Step 2: Initialize the Framework
-
-**Windows (Command Prompt):**
-```cmd
-cd "C:\Program Files (x86)\Steam\steamapps\common\Songs of Syx"
-java -javaagent:sosModHooks.jar -jar SongsOfSyx.jar
-```
-
-**Linux/Mac (Terminal):**
 ```bash
-cd /home/username/games/songs-of-syx
-java -javaagent:sosModHooks.jar -jar SongsOfSyx.jar
-```
-
-**Steam Integration:**
-1. Right-click Songs of Syx in Steam
-2. Properties → General → Launch Options
-3. Add: `-javaagent:sosModHooks.jar`
-4. Launch normally from Steam
-
-### Step 3: Verify Framework Initialization
-
-When the framework loads successfully, you'll observe these diagnostic messages:
-```
-HookAgent: Initializing ASM-based hook system...
-Hook system initialized with instrumentation from agent
-```
-
-**Framework deployment complete.** The bytecode transformation system is now operational.
-
-## Mod Development Framework
-
-With the framework deployed, you can now develop mods that leverage the runtime injection capabilities. Here's the development workflow:
-
-### 1. Establish Mod Project Architecture
-
-**Create a new mod project with this structure:**
-
-```
-YourModName/                    # Project root directory
-├── src/
-│   └── main/
-│       └── java/
-│           └── yourmod/       # Package namespace
-│               ├── MainScript.java          # Primary entry point
-│               ├── InstanceScript.java      # Runtime instance management
-│               └── hooks/                   # Hook implementations
-│                   └── MyCustomHook.java    # Custom hook logic
-├── pom.xml                                  # Maven build configuration
-└── _Info.txt                               # Mod metadata
-```
-
-**Development Guidelines:**
-- Do not copy files from the sosModHooks directory - those are framework components
-- Create new files using the provided templates
-- Your mod is architecturally separate from the modding framework
-- The sosModHooks classes are not available at compile time - use reflection as shown in the examples below
-- Your hook classes are plain Java classes - they don't need to implement sosModHooks interfaces
-
-**Reflection Usage:**
-- sosModHooks.jar is loaded at runtime via the `-javaagent` parameter
-- Your mod is compiled separately in its own project
-- At compile time, the sosModHooks classes don't exist in your project's classpath
-- Reflection allows your mod to access the framework classes at runtime
-
-### 2. Implement the Primary Entry Point
-
-**File:** `src/main/java/yourmod/MainScript.java`
-
-```java
-package yourmod;
-
-import script.SCRIPT;
-
-public class MainScript implements SCRIPT {
-    
-    private final String info = "Your Mod Description";
-    
-    @Override
-    public CharSequence name() {
-        return "Your Mod Name";
-    }
-    
-    @Override
-    public CharSequence desc() {
-        return info;
-    }
-    
-    @Override
-    public void initBeforeGameCreated() {
-        try {
-            // Initialize the hook framework using reflection
-            Class<?> hookSystemClass = Class.forName("sosModHooks.HookSystem");
-            hookSystemClass.getMethod("initialize").invoke(null);
-            
-            // Create and register hook interceptors using reflection
-            Class<?> gameClassHookInterface = Class.forName("sosModHooks.hooks.GameClassHook");
-            MyCustomHook gameHook = new MyCustomHook("GameHook");
-            MyCustomHook settlementHook = new MyCustomHook("SettlementHook");
-            
-            // Register hooks for different game classes
-            hookSystemClass.getMethod("registerHook", String.class, gameClassHookInterface)
-                .invoke(null, "game.GAME", gameHook);
-            hookSystemClass.getMethod("registerHook", String.class, gameClassHookInterface)
-                .invoke(null, "settlement.main.SETT", settlementHook);
-            
-            System.out.println("Your Mod initialized successfully!");
-        } catch (Exception e) {
-            System.err.println("Failed to initialize mod: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
-    
-    @Override
-    public boolean isSelectable() {
-        return true; // Set to false if you don't want users to select this mod
-    }
-    
-    @Override
-    public boolean forceInit() {
-        return true; // Always initialize
-    }
-    
-    @Override
-    public SCRIPT_INSTANCE createInstance() {
-        return new InstanceScript();
-    }
-}
-```
-
-### 3. Implement Runtime Instance Management
-
-**File:** `src/main/java/yourmod/InstanceScript.java`
-
-```java
-package yourmod;
-
-import java.io.IOException;
-import script.SCRIPT;
-import snake2d.MButt;
-import snake2d.Renderer;
-import snake2d.util.datatypes.COORDINATE;
-import snake2d.util.file.*;
-import util.gui.misc.GBox;
-import view.keyboard.KEYS;
-
-final class InstanceScript implements SCRIPT.SCRIPT_INSTANCE {
-
-    private static boolean initialized = false;
-
-    InstanceScript() {
-        if (!initialized) {
-            try {
-                System.out.println("Your Mod instance created successfully");
-                initialized = true;
-            } catch (Exception e) {
-                System.err.println("Failed to initialize mod instance: " + e.getMessage());
-                e.printStackTrace();
-            }
-        }
-    }
-
-    @Override
-    public void save(FilePutter file) {
-        // Add your save logic here
-    }
-    
-    @Override
-    public void load(FileGetter file) throws IOException {
-        // Add your load logic here
-    }
-    
-    @Override
-    public void update(double ds) {
-        // Add your update logic here (runs every frame)
-    }
-    
-    @Override
-    public void hoverTimer(double mouseTimer, GBox text) {
-        // Add your hover tooltip logic here
-    }
-    
-    @Override
-    public void render(Renderer renderer, float ds) {
-        // Add your rendering logic here
-    }
-    
-    @Override
-    public void keyPush(KEYS key) {
-        // Add your keyboard input handling here
-    }
-    
-    @Override
-    public void mouseClick(MButt button) {
-        // Add your mouse click handling here
-    }
-    
-    @Override
-    public void hover(COORDINATE mCoo, boolean mouseHasMoved) {
-        // Add your mouse hover handling here
-    }
-    
-    @Override
-    public boolean handleBrokenSavedState() {
-        return SCRIPT.SCRIPT_INSTANCE.super.handleBrokenSavedState();
-    }
-}
-```
-
-### 4. Implement Hook Interceptors
-
-**File:** `src/main/java/yourmod/hooks/MyCustomHook.java`
-
-**Note:** This is a custom class you create in your mod project. It does not extend or implement any sosModHooks interfaces - the framework handles the interface implementation at runtime.
-
-```java
-package yourmod.hooks;
-
-public class MyCustomHook {
-    
-    private final String hookName;
-    
-    public MyCustomHook(String hookName) {
-        this.hookName = hookName;
-    }
-    
-    // These methods will be called by the hook system at runtime
-    // The sosModHooks framework will handle the interface implementation
-    
-    public void beforeCreate(Object instance) {
-        // Executes BEFORE constructor execution
-        // instance will be null since the object isn't instantiated yet
-        System.out.println("[" + hookName + "] Pre-instantiation hook triggered");
-        
-        // Add your pre-instantiation logic here
-        // Example: Initialize global state, prepare resources
-    }
-    
-    public void afterCreate(Object instance) {
-        // Executes AFTER constructor execution
-        // instance is the newly instantiated game object
-        if (instance != null) {
-            System.out.println("[" + hookName + "] Post-instantiation hook triggered for: " + 
-                instance.getClass().getSimpleName());
-            
-            // Add your post-instantiation logic here
-            // Example: Modify object state, inject custom properties
-        }
-    }
-}
-```
-
-### 5. Define Mod Metadata
-
-**File:** `_Info.txt`
-
-```
-Name: Your Mod Name
-Description: Your mod description here
-Version: 1.0.0
-Author: Your Name
-```
-
-### 6. Configure Build System
-
-**File:** `pom.xml`
-
-**Maven configuration must use Java 8 settings**
-
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 
-         http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-    
-    <groupId>yourmod</groupId>
-    <artifactId>your-mod-name</artifactId>
-    <version>1.0.0</version>
-    <packaging>jar</packaging>
-    
-    <properties>
-        <maven.compiler.source>8</maven.compiler.source>
-        <maven.compiler.target>8</maven.compiler.target>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    </properties>
-    
-    <dependencies>
-        <!-- Add any external dependencies your mod needs -->
-    </dependencies>
-    
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.8.1</version>
-                <configuration>
-                    <source>8</source>
-                    <target>8</target>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
-</project>
-```
-
-**Build the mod:**
-```bash
+cd sosModHooks
 mvn clean package
-# Generates: target/your-mod-name-1.0.0.jar
+mvn install
 ```
 
-## Technical Implementation Details
+The framework will be automatically installed to your game's mod directory and will appear in the Scripts tab when starting a new game.
 
-### Execution Flow
+## Usage
 
-1. **Framework Deployment** - `sosModHooks.jar` deploys to game directory
-2. **JVM Initialization** - Framework loads via `-javaagent` parameter
-3. **Mod Loading** - Your mod registers hooks via `MainScript`
-4. **Class Interception** - Framework intercepts class loading events
-5. **Bytecode Transformation** - ASM transforms classes, injecting hook calls
-6. **Hook Execution** - Your custom logic executes at runtime
+### Basic Operation
 
-### Hook Interception Points
+1. **Enable the Framework**: Select sosModHooks in the Scripts tab when starting a new game
+2. **Access Overlay**: Press F10 to toggle the compatibility overlay
+3. **View Status**: The overlay shows real-time compatibility information
+4. **Configure Keys**: The F10 key binding can be reconfigured in the game's key binding settings
 
-- **Game classes** like `game.GAME`, `settlement.main.SETT`
-- **Any instantiated class** during gameplay
-- **Constructor execution** (object instantiation lifecycle)
+### Key Bindings
 
-## Advanced Implementation Example
+- **F10**: Toggle compatibility overlay visibility
+- **Customizable**: Key binding can be changed through the game's settings menu
 
-Here's a sophisticated example that demonstrates settlement modification:
+### Overlay Information
 
-**File:** `src/main/java/yourmod/hooks/SettlementMod.java`
+The overlay displays:
 
-```java
-package yourmod.hooks;
+- **Compatibility Status**: Overall assessment of mod compatibility
+- **System Health**: Performance score and status indicators
+- **Conflict Details**: Specific information about detected compatibility issues
+- **Performance Metrics**: Memory usage and system stress indicators
+- **Active Mod Count**: Number of loaded mods and their status
 
-public class SettlementMod {
-    
-    private final String hookName;
-    
-    public SettlementMod(String hookName) {
-        this.hookName = hookName;
-    }
-    
-    // These methods will be called by the hook system at runtime
-    // The sosModHooks framework will handle the interface implementation
-    
-    public void beforeCreate(Object instance) {
-        // Pre-instantiation logic
-        System.out.println("[" + hookName + "] Preparing settlement instantiation...");
-        
-        // Add your pre-instantiation logic here
-        // Example: Initialize settlement-specific state
-    }
-    
-    public void afterCreate(Object instance) {
-        // Post-instantiation logic
-        if (instance != null) {
-            System.out.println("[" + hookName + "] Settlement instantiated: " + 
-                instance.getClass().getSimpleName());
-            
-            // Add your post-instantiation logic here
-            // Example: Modify settlement properties, inject custom features
-        }
-    }
-}
-```
+## Technical Details
 
-**Hook registration in MainScript.java (using reflection):**
+### Integration Method
 
-```java
-@Override
-public void initBeforeGameCreated() {
-    try {
-        // Initialize the hook framework using reflection
-        Class<?> hookSystemClass = Class.forName("sosModHooks.HookSystem");
-        hookSystemClass.getMethod("initialize").invoke(null);
-        
-        // Register settlement modification hook using reflection
-        Class<?> gameClassHookInterface = Class.forName("sosModHooks.hooks.GameClassHook");
-        SettlementMod settlementHook = new SettlementMod("SettlementMod");
-        
-        hookSystemClass.getMethod("registerHook", String.class, gameClassHookInterface)
-            .invoke(null, "settlement.main.SETT", settlementHook);
-        
-        System.out.println("Settlement Mod initialized successfully!");
-    } catch (Exception e) {
-        System.err.println("Failed to initialize settlement mod: " + e.getMessage());
-        e.printStackTrace();
-    }
-}
-```
+The framework uses script hooks rather than class replacement, ensuring:
 
-## Development Requirements
+- Safe operation without modifying core game files
+- Compatibility with game updates
+- No risk of save file corruption
+- Clean integration with existing mod systems
 
-### Mandatory Components
+### Reflection Usage
 
-- **MainScript.java** - Primary entry point (implements `SCRIPT`)
-- **InstanceScript.java** - Runtime instance management
-- **Hook implementations** - Implement `GameClassHook` interface
-- **Hook registration** - Call `HookSystem.registerHook()` in `initBeforeGameCreated()`
+The framework uses Java reflection to:
 
-### Project Architecture
+- Access the game's loaded mod list
+- Discover mod declarations through method calls
+- Analyze mod class structures
+- Detect method and field conflicts
+- Monitor runtime behavior
 
-**Follow this structure exactly:**
+### Performance Impact
+
+The framework is designed for minimal performance impact:
+
+- Efficient conflict detection algorithms
+- Minimal memory footprint
+- Optimized rendering system
+- Background monitoring with configurable intervals
+
+## Compatibility
+
+### Game Versions
+
+- **Primary**: Songs of Syx V69.38
+- **Tested**: V69.x series
+- **Expected**: Compatible with V68+ (may require minor adjustments)
+
+### Mod Compatibility
+
+The framework is designed to work with:
+
+- Vanilla game installations
+- Other script-based mods
+- Class replacement mods
+- Asset modification mods
+- Mods that implement the declaration interface
+
+### Known Limitations
+
+- Cannot detect conflicts in mods that use advanced obfuscation
+- Limited to Java reflection capabilities
+- May not detect all resource file conflicts
+- Performance monitoring requires mod cooperation
+
+## Development
+
+### Source Code Structure
 
 ```
-YourModName/
-├── src/
-│   └── main/
-│       └── java/
-│           └── yourmod/                    # Change 'yourmod' to your package namespace
-│               ├── MainScript.java          # Use template above
-│               ├── InstanceScript.java      # Use template above
-│               └── hooks/                   # Create this directory
-│                   └── MyCustomHook.java    # Your hook implementation
-├── pom.xml                                  # Use template above
-└── _Info.txt                               # Use template above
+src/main/java/sosModHooks/
+├── MainScript.java              # Entry point and SCRIPT interface
+├── ModCompatibilityFramework.java  # Main framework coordination
+├── ModRegistry.java             # Central mod registration system
+├── ModCompatibilityAPI.java     # Public API for modders
+├── ModDeclaration.java          # Mod metadata representation
+├── ModConflict.java             # Conflict representation
+├── ConflictType.java            # Conflict categorization
+├── ModCompatibilityScanner.java    # Conflict detection engine
+├── ModConflictReporter.java        # User interface management
+├── ModEnhancementManager.java      # Runtime monitoring
+└── ModKeyBindings.java             # Key binding integration
 ```
 
-### Build Process
+### Building from Source
 
-```bash
-mvn clean package
-# Generates: target/your-mod-name-1.0.0.jar
-```
+1. Clone the repository
+2. Install Maven dependencies: `mvn validate`
+3. Build the framework: `mvn clean package`
+4. Install to game: `mvn install`
 
-## Architectural Advantages
+### Extending the Framework
 
-| Traditional Modding | This Framework |
-|---------------------|----------------|
-| ❌ File replacement conflicts | ✅ Runtime bytecode injection |
-| ❌ Mod incompatibilities | ✅ Simultaneous mod execution |
-| ❌ Update vulnerability | ✅ Framework resilience |
-| ❌ Complex integration | ✅ Clean hook registration |
+The framework is designed to be extensible:
 
-## Common Use Cases
-
-- **Runtime behavior modification** of existing game objects
-- **State injection** without altering game code
-- **Event logging and debugging** capabilities
-- **Custom logic integration** into game systems
+- Add new conflict detection types in ConflictType enum
+- Implement custom scanners by extending ModCompatibilityScanner
+- Create additional UI elements in ModConflictReporter
+- Add new monitoring capabilities in ModEnhancementManager
 
 ## Troubleshooting
 
-- **"No instrumentation available"** → Verify `-javaagent:sosModHooks.jar` parameter
-- **Hooks not executing** → Validate class names and hook registration
-- **Game crashes** → Review hook implementation for errors
-- **Mod not loading** → Verify `MainScript.java` implements `SCRIPT` correctly
-- **Framework not found** → Confirm `sosModHooks.jar` is in game directory
-- **Java version errors** → Use Java 1.8 (Java 8) - verify with `java -version`
-- **"Unsupported class file version"** → Downgrade from Java 9+ to Java 8
+### Common Issues
+
+- **Framework Not Appearing**: Ensure the framework is properly installed in the game's mod directory
+- **Overlay Not Showing**: Check that F10 key binding is working and not conflicting with other mods
+- **Performance Issues**: The framework has minimal impact, but can be disabled if needed
+- **Conflict Detection**: Some conflicts may not be detected if mods use advanced techniques
+
+### Debug Information
+
+The framework provides comprehensive console logging:
+
+- Initialization status and timing
+- Mod registration confirmations
+- Conflict detection results
+- Performance monitoring data
+- Error conditions and recovery attempts
+
+### Support
+
+For issues or questions:
+
+1. Check the console output for error messages
+2. Verify framework installation in the correct directory
+3. Test with minimal mod loadout to isolate conflicts
+4. Review the game's error logs for additional information
+
+## License
+
+This framework is provided as-is for educational and compatibility purposes. Use at your own risk.
+
+## Acknowledgments
+
+- Songs of Syx development team for the excellent modding framework
+- Community modders for testing and feedback
+- Java reflection API for enabling safe mod analysis
+
+---
+
+**Note**: This framework is designed to help identify compatibility issues but cannot guarantee that all detected conflicts will cause problems. Some conflicts may be harmless or even intentional. Always test your mod combinations thoroughly before using them in important games.
