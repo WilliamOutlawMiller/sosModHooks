@@ -2,7 +2,7 @@
 
 ## Overview
 
-**sosModHooks** is a comprehensive mod compatibility framework that provides automatic conflict detection, runtime compatibility monitoring, and intelligent mod management for Songs of Syx. The framework operates entirely through script hooks, ensuring safe integration without modifying core game files.
+**sosModHooks** is a comprehensive mod compatibility framework that provides automatic conflict detection, runtime compatibility monitoring, and intelligent mod management for Songs of Syx. The framework operates entirely as a standard game mod, ensuring safe integration without modifying core game files.
 
 ## Core Functionality
 
@@ -35,23 +35,23 @@ The framework intelligently detects eight types of compatibility issues:
 
 The framework consists of ten specialized components working together:
 
-| Component | Purpose | Lines | Status |
-|-----------|---------|-------|---------|
-| **ModCompatibilityFramework** | Main orchestrator | 606 | Production Ready |
-| **ModRegistry** | Central conflict detection | 323 | Production Ready |
-| **ModCompatibilityAPI** | Public modder interface | 165 | Production Ready |
-| **ModEnhancementManager** | Runtime monitoring | 315 | Production Ready |
-| **ModKeyBindings** | Game integration | 238 | Production Ready |
-| **ModConflict** | Conflict representation | 117 | Production Ready |
-| **ModDeclaration** | Mod metadata | 60 | Production Ready |
-| **ConflictType** | Conflict categorization | 33 | Production Ready |
-| **ModConflictReporter** | UI management | 61 | Production Ready |
-| **MainScript** | Game entry point | 71 | Production Ready |
+| Component | Purpose
+|-----------|---------
+| **ModCompatibilityFramework** | Main orchestrator
+| **ModRegistry** | Central conflict detection 
+| **ModCompatibilityAPI** | Public modder interface
+| **ModEnhancementManager** | Runtime monitoring
+| **ModKeyBindings** | Game integration
+| **ModConflict** | Conflict representation
+| **ModDeclaration** | Mod metadata
+| **ConflictType** | Conflict categorization
+| **ModConflictReporter** | UI management
+| **MainScript** | Game entry point
 
 ### System Flow
 
 ```
-Game Startup → Framework Initialization → Mod Discovery → Conflict Analysis → Runtime Monitoring
+Game Startup → Mod Selection → Framework Initialization → Mod Discovery → Conflict Analysis → Runtime Monitoring
      ↓              ↓                        ↓              ↓                ↓
 MainScript → ModCompatibilityFramework → Reflection → ModRegistry → EnhancementManager
 ```
@@ -150,113 +150,22 @@ Mods can declare comprehensive modification information:
 
 ### For Players
 
-1. Download the mod from the workshop or releases
-2. Enable in your mods list when starting a new game
-3. Press F10 to access the compatibility overlay
-4. Monitor the console for compatibility information
+1. **Download the mod** from the workshop or releases
+2. **Place in mods folder**: Copy to your Songs of Syx mods directory
+3. **Enable in game**: Select sosModHooks when starting a new game
+4. **Use F10**: Press F10 to access the compatibility overlay
+5. **Monitor console**: Check console output for compatibility information
 
 ### For Modders
 
-1. Add dependency: List `sosModHooks` as a requirement
-2. Implement methods: Add reflection methods to your SCRIPT class
-3. Test compatibility: Use the framework to verify your mod works with others
+**No dependency required!** sosModHooks will automatically discover your mod if you implement the standard methods:
 
-## Current Status and Roadmap
-
-### What's Working Now
-
-- Complete conflict detection system for all major conflict types
-- Automatic mod discovery through reflection
-- Professional UI overlay with real-time information
-- Runtime monitoring and performance tracking
-- Game system integration without core file modifications
-- Comprehensive testing suite with 24+ unit tests
-
-### Planned Enhancements
-
-- Automatic conflict resolution suggestions
-- Community compatibility database integration
-- Runtime mod hot-swapping capabilities
-- Intelligent load order optimization
-- Asset merging system for compatible mods
-
-## Testing and Quality Assurance
-
-### Test Coverage
-
-The framework includes comprehensive testing:
-
-- **ModRegistry Tests**: Core conflict detection algorithms
-- **API Tests**: Public interface functionality
-- **Reflection Tests**: Automatic mod discovery
-- **Basic Functionality Tests**: Component creation and operation
-- **Integration Tests**: End-to-end framework operation
-
-### Testing Strategy
-
-- **Unit Tests**: Verify individual components work correctly
-- **Integration Tests**: Ensure components work together
-- **Runtime Tests**: Validate in-game functionality
-- **Conflict Scenarios**: Test various mod conflict situations
-
-## Contributing and Community
-
-### Reporting Issues
-
-- **GitHub Issues**: For bug reports and feature requests
-- **Workshop Comments**: For player feedback and compatibility reports
-- **Discord**: For developer discussions and support
-
-### Development
-
-- Fork the repository and submit pull requests
-- Follow the existing code style and patterns
-- Add tests for new functionality
-- Update documentation for any changes
-
-## Documentation and Resources
+1. **Implement methods**: Add reflection methods to your SCRIPT class (see examples above)
+2. **Test compatibility**: Use the framework to verify your mod works with others
+3. **No imports needed**: The framework discovers mods automatically
 
 ### Additional Guides
 
 - **[MODDER_INTEGRATION_GUIDE.md](MODDER_INTEGRATION_GUIDE.md)**: Detailed integration instructions
 - **[MOD_INTEGRATION_TEMPLATE.java](MOD_INTEGRATION_TEMPLATE.java)**: Copy-paste integration template
 - **[INSTALL.md](INSTALL.md)**: Installation and setup instructions
-
-### External Resources
-
-- **Songs of Syx Wiki**: Game modding information
-- **Community Discord**: Modder discussions and support
-- **Workshop**: Download and rate the mod
-
-## Framework Benefits
-
-### For Players
-
-- Prevents crashes from incompatible mods
-- Provides transparency about mod conflicts
-- Offers solutions for compatibility issues
-- Improves stability of modded games
-
-### For Modders
-
-- Automatic conflict detection without manual testing
-- Standardized declaration system
-- Easy integration with minimal code changes
-- Community compatibility knowledge sharing
-
-### For the Game
-
-- Enables complex mod combinations safely
-- Improves mod ecosystem quality
-- Reduces support issues from mod conflicts
-- Facilitates advanced modding capabilities
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
-**Ready to transform your Songs of Syx modding experience?**
-
-Install sosModHooks today and join the growing community of modders building amazing, compatible content for Songs of Syx.

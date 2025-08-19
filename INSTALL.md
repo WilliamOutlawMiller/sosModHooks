@@ -4,118 +4,78 @@
 
 ### 1. Download
 - Download the latest `sosModHooks.jar` file from releases
-- Place it in the **same folder** as your `SongsOfSyx.jar` file
+- Place it in your Songs of Syx mods folder
 
-### 2. Start the Game
-```bash
-java -javaagent:sosModHooks.jar -jar SongsOfSyx.jar
-```
+### 2. Enable in Game
+- Start Songs of Syx
+- When starting a new game, select sosModHooks from the mods list
+- The mod will load automatically with your game
 
-**That's it!** The mod will load automatically.
+**That's it!** The mod will work automatically once enabled.
 
 ## Detailed Steps
 
 ### Windows
 
-1. **Download** the `sosModHooks.jar` file to your Songs of Syx folder
-   - **Location:** `C:\Games\Songs of Syx\` (or wherever your game is installed)
-   - **Files in folder:** `SongsOfSyx.jar`, `sosModHooks.jar`
-
-2. **Open Command Prompt** in the Songs of Syx folder
-   - Press `Win + R`, type `cmd`, press Enter
-   - Navigate to your game folder: `cd "C:\Games\Songs of Syx"`
-
-3. **Run the game with the mod:**
-   ```cmd
-   java -javaagent:sosModHooks.jar -jar SongsOfSyx.jar
-   ```
+1. **Download** the `sosModHooks.jar` file
+2. **Copy to mods folder**:
+   - **Location:** `%USERPROFILE%\AppData\Roaming\songsofsyx\mods\`
+   - **Create folder:** `sosModHooks\V69\script\`
+   - **Place JAR:** Copy `sosModHooks.jar` to the `script` folder
+3. **Start the game** normally from Steam or desktop shortcut
+4. **Enable mod** when starting a new game
 
 ### Linux/Mac
 
-1. **Download** the `sosModHooks.jar` file to your Songs of Syx folder
-   - **Location:** `/home/username/games/songs-of-syx/` (or wherever your game is installed)
-   - **Files in folder:** `SongsOfSyx.jar`, `sosModHooks.jar`
-
-2. **Open Terminal** in the Songs of Syx folder
-   - Open Terminal application
-   - Navigate to your game folder: `cd /home/username/games/songs-of-syx/`
-
-3. **Run the game with the mod:**
-   ```bash
-   java -javaagent:sosModHooks.jar -jar SongsOfSyx.jar
-   ```
+1. **Download** the `sosModHooks.jar` file
+2. **Copy to mods folder**:
+   - **Location:** `~/.local/share/songsofsyx/mods/`
+   - **Create folder:** `sosModHooks/V69/script/`
+   - **Place JAR:** Copy `sosModHooks.jar` to the `script` folder
+3. **Start the game** normally from Steam or desktop shortcut
+4. **Enable mod** when starting a new game
 
 ### Steam
 
-1. **Right-click** Songs of Syx in Steam
-2. **Properties** → **General** → **Launch Options**
-3. **Add this exact line:**
-   ```
-   -javaagent:sosModHooks.jar
-   ```
-4. **Launch normally** from Steam
-
-**Important:** Make sure `sosModHooks.jar` is in the same folder as `SongsOfSyx.jar`!
-
-### Creating a Desktop Shortcut (Windows)
-
-1. **Right-click** on your desktop
-2. **New** → **Shortcut**
-3. **Target location:**
-   ```
-   "C:\Program Files\Java\bin\java.exe" -javaagent:sosModHooks.jar -jar "C:\Games\Songs of Syx\SongsOfSyx.jar"
-   ```
-4. **Name:** Songs of Syx (with Mods)
-5. **Double-click** to launch with mods
-
-### Creating a Desktop Shortcut (Linux/Mac)
-
-1. **Create a shell script** named `launch-sos-with-mods.sh`:
-   ```bash
-   #!/bin/bash
-   cd "/home/username/games/songs-of-syx"
-   java -javaagent:sosModHooks.jar -jar SongsOfSyx.jar
-   ```
-
-2. **Make it executable:**
-   ```bash
-   chmod +x launch-sos-with-mods.sh
-   ```
-
-3. **Create desktop entry** or add to applications menu
+1. **Install normally** - no special launch options needed
+2. **Enable mod** in the mods list when starting a new game
+3. **Launch normally** from Steam
 
 ## File Structure After Installation
 
 ```
-Your Songs of Syx Folder/
-├── SongsOfSyx.jar          # Original game file
-├── sosModHooks.jar         # Mod system (you added this)
-├── saves/                  # Game saves
-├── campaigns/              # Game campaigns
-└── other game files...
+Your Songs of Syx Mods Folder/
+├── sosModHooks/
+│   ├── _Info.txt
+│   └── V69/
+│       └── script/
+│           ├── sosModHooks.jar
+│           └── _src/
+│               └── sosModHooks-sources.jar
+└── other mods...
 ```
 
 ## Troubleshooting
 
-### "No instrumentation available"
-- **Problem:** Mod system isn't loading properly
-- **Solution:** Make sure you're using the `-javaagent:sosModHooks.jar` parameter
-- **Check:** Verify the JAR file path is correct and in the same folder
+### Mod not appearing in list
+- **Problem:** Mod doesn't show up when starting a new game
+- **Solution:** Verify the JAR file is in the correct `script` folder
+- **Check:** Ensure the folder structure matches exactly: `mods/sosModHooks/V69/script/`
 
-### Game won't start
-- **Problem:** Game crashes or won't launch
+### Game crashes with mod
+- **Problem:** Game crashes when mod is enabled
 - **Solutions:**
   - Verify Java 8+ is installed: `java -version`
   - Check the JAR file isn't corrupted (try downloading again)
-  - Try running without the mod first: `java -jar SongsOfSyx.jar`
+  - Try running without the mod first to isolate the problem
   - Check file permissions (Linux/Mac)
 
 ### Mod not working
 - **Problem:** Game runs but mod doesn't work
 - **Solutions:**
   - Check console output for error messages
-  - Verify the mod JAR is in the same folder as SongsOfSyx.jar
-  - Make sure you're using the exact command: `-javaagent:sosModHooks.jar`
+  - Verify the mod JAR is in the correct location
+  - Make sure you've enabled the mod in the mods list
   - Check that your mod JAR files are properly built
 
 ### "Class not found" errors
@@ -124,57 +84,42 @@ Your Songs of Syx Folder/
 
 ## What Happens During Installation
 
-1. **Game starts** with the mod loaded via `-javaagent`
-2. **Mod intercepts** class loading automatically
-3. **Hooks are injected** into game classes
-4. **Your mods work** without any additional setup
+1. **Mod loads** as a standard Songs of Syx script mod
+2. **Framework initializes** during game startup
+3. **Mod discovery** automatically detects other loaded mods
+4. **Conflict analysis** runs to identify potential issues
+5. **Overlay becomes available** via F10 key
 
 ## Verifying Installation
 
 When the mod is working correctly, you should see these messages in the console:
 
 ```
-HookAgent: Initializing ASM-based hook system...
-HookAgent: Successfully initialized hook system
-Hook system initialized with instrumentation from agent
+sosModHooks: ModCompatibilityFramework constructor called
+sosModHooks: ModRegistry initialized
+sosModHooks: Mod registry initialized successfully
 ```
 
 ## Uninstalling
 
 ### Remove Mod System
-1. **Remove** the `-javaagent:sosModHooks.jar` parameter from launch options
-2. **Delete** the `sosModHooks.jar` file
+1. **Disable** the mod in the mods list when starting a new game
+2. **Delete** the `sosModHooks` folder from your mods directory
 3. **Restart** the game
-
-### Remove Your Mods
-1. **Delete** your mod JAR files from the mods folder
-2. **Restart** the game
 
 The mod will no longer load, and the game will run normally.
 
 ## Advanced Installation
 
 ### Multiple Mods
-You can load multiple mods by adding multiple `-javaagent` parameters:
+You can load multiple mods by enabling them all in the mods list:
 
-```bash
-java -javaagent:sosModHooks.jar -javaagent:yourmod.jar -jar SongsOfSyx.jar
-```
+1. **Enable sosModHooks** in the mods list
+2. **Enable your other mods** in the same list
+3. **Start the game** - sosModHooks will automatically detect and analyze all mods
 
-### Custom Java Options
-You can combine with other Java options:
-
-```bash
-java -Xmx4g -javaagent:sosModHooks.jar -jar SongsOfSyx.jar
-```
-
-### Environment Variables
-Set `JAVA_OPTS` environment variable (Linux/Mac):
-
-```bash
-export JAVA_OPTS="-javaagent:sosModHooks.jar"
-java $JAVA_OPTS -jar SongsOfSyx.jar
-```
+### Custom Mod Folders
+If you have custom mod locations, ensure sosModHooks is in the same mods directory that the game recognizes.
 
 ## Support
 
@@ -186,4 +131,4 @@ If you encounter issues:
 4. **Check Java version** compatibility
 5. **Review troubleshooting** section above
 
-**Remember:** The mod system must be loaded BEFORE the game starts, which is why the `-javaagent` parameter is essential!
+**Remember:** sosModHooks is a standard mod that loads with your game - no special launch parameters or Java agents are needed!
