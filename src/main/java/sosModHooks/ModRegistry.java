@@ -274,6 +274,19 @@ public final class ModRegistry {
     }
     
     /**
+     * Clear all registered mods and their declarations.
+     * This is useful for testing and resetting the registry.
+     */
+    public void clearAll() {
+        registeredMods.clear();
+        classReplacements.clear();
+        assetModifications.clear();
+        dataModifications.clear();
+        dependencies.clear();
+        System.out.println("sosModHooks: ModRegistry cleared all data");
+    }
+    
+    /**
      * Get a summary of all registered mods and their changes.
      */
     public String getModSummary() {

@@ -190,6 +190,7 @@
         <game.version.directory>V${game.version.major}</game.version.directory>
         <game.jar.name>SongsOfSyx.jar</game.jar.name>
         <game.jar.source.name>SongsOfSyx-sources.jar</game.jar.source.name>
+        <game.jar.path>${game.install.directory}/${game.jar.name}</game.jar.path>
         <game.mod.uploader.content.directory>${game.mod.uploader.directory}/WorkshopContent</game.mod.uploader.content.directory>
 
         <mod.files.name>mod-files</mod.files.name>
@@ -219,39 +220,35 @@
     </properties>
 
     <dependencies>
-        <!-- Game dependency SongsOfSyx.jar -->
         <dependency>
             <groupId>com.songsofsyx</groupId>
             <artifactId>songsofsyx</artifactId>
-            <version>${game.version.major}.${game.version.minor}</version>
+            <version>69.38</version>
+            <scope>system</scope>
+            <systemPath>${game.jar.path}</systemPath>
         </dependency>
-
-        <!-- Lazy Developer -->
+        
+        <!-- JUnit 5 for testing -->
         <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <version>${lombok.version}</version>
-            <scope>provided</scope>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>5.9.2</version>
+            <scope>test</scope>
         </dependency>
-
-        <!-- Testing -->
+        
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-engine</artifactId>
-            <version>${junit-jupiter-engine.version}</version>
+            <version>5.9.2</version>
             <scope>test</scope>
         </dependency>
+        
+        <!-- Lombok for annotations -->
         <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-core</artifactId>
-            <version>${mockito-core.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.assertj</groupId>
-            <artifactId>assertj-core</artifactId>
-            <version>${assertj-core.version}</version>
-            <scope>test</scope>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.18.26</version>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 
