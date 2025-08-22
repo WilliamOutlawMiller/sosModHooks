@@ -1,59 +1,51 @@
-# sosModHooks - Mod Compatibility Framework for Songs of Syx
+# sosModHooks - Runtime Mod Detection Framework for Songs of Syx
 
 ## Overview
 
-**sosModHooks** is a comprehensive mod compatibility framework that provides automatic conflict detection, runtime compatibility monitoring, and intelligent mod management for Songs of Syx. The framework operates entirely as a standard game mod, ensuring safe integration without modifying core game files.
+**sosModHooks** is a runtime mod detection and compatibility monitoring framework for Songs of Syx. The framework operates as a standard game mod and provides real-time monitoring of loaded mods, system health tracking, and compatibility analysis through the game's internal systems.
 
 ## Core Functionality
 
 ### Primary Capabilities
 
-The framework operates as a comprehensive modding ecosystem that provides:
+The framework provides comprehensive runtime monitoring and analysis:
 
-1. **Automatic Mod Discovery**: Uses reflection to automatically detect and analyze all loaded mods
-2. **Real-time Conflict Detection**: Identifies compatibility issues as they occur during gameplay
-3. **Performance Monitoring**: Tracks system health, memory usage, and error patterns
-4. **Seamless Integration**: Integrates with the game's native key binding system and UI theming
-5. **Runtime Compatibility**: Monitors for runtime conflicts and crashes in real-time
+1. **Runtime Mod Detection**: Accesses the game's internal PATHS and ScriptEngine systems to detect actively loaded mods
+2. **Real-time System Monitoring**: Tracks system health, memory usage, and error patterns during gameplay
+3. **Compatibility Analysis**: Analyzes mod interactions and identifies potential conflicts based on runtime behavior
+4. **Performance Metrics**: Monitors game performance and provides real-time feedback
+5. **Seamless Integration**: Integrates with the game's native key binding system and UI theming
 
-### Conflict Detection Types
+### Mod Detection Methods
 
-The framework intelligently detects eight types of compatibility issues:
+The framework uses multiple detection approaches to identify loaded mods:
 
-- **Class Replacement Conflicts**: Multiple mods replacing the same core game class
-- **Asset Modification Conflicts**: Multiple mods modifying the same asset files
-- **Data Structure Conflicts**: Multiple mods modifying the same game data types
-- **Missing Dependencies**: Required mods that are not loaded
-- **Load Order Conflicts**: Conflicting mod loading sequences
-- **Method Signature Conflicts**: Incompatible method implementations
-- **Field Name Conflicts**: Conflicting field names in shared classes
-- **Package Conflicts**: Package naming collisions
+- **PATHS System Access**: Direct access to the game's mod loading system
+- **ScriptEngine Integration**: Detection of script-based mods through the game's script engine
+- **Classpath Analysis**: Runtime analysis of loaded JAR files and classpaths
+- **Launcher Settings**: Access to user-activated mods through launcher configuration
 
 ## Technical Architecture
 
 ### Core Components
 
-The framework consists of ten specialized components working together:
+The framework consists of specialized components working together:
 
-| Component | Purpose
-|-----------|---------
-| **ModCompatibilityFramework** | Main orchestrator
-| **ModRegistry** | Central conflict detection 
-| **ModCompatibilityAPI** | Public modder interface
-| **ModEnhancementManager** | Runtime monitoring
-| **ModKeyBindings** | Game integration
-| **ModConflict** | Conflict representation
-| **ModDeclaration** | Mod metadata
-| **ConflictType** | Conflict categorization
-| **ModConflictReporter** | UI management
-| **MainScript** | Game entry point
+| Component | Purpose |
+|-----------|---------|
+| **ModCompatibilityFramework** | Main orchestrator and UI manager |
+| **ModRegistry** | Runtime mod detection and analysis |
+| **ModEnhancementManager** | System monitoring and performance tracking |
+| **ModKeyBindings** | Game integration and key binding management |
+| **ComprehensiveModOverlay** | F10 overlay interface system |
+| **MainScript** | Game entry point and initialization |
 
 ### System Flow
 
 ```
-Game Startup → Mod Selection → Framework Initialization → Mod Discovery → Conflict Analysis → Runtime Monitoring
-     ↓              ↓                        ↓              ↓                ↓
-MainScript → ModCompatibilityFramework → Reflection → ModRegistry → EnhancementManager
+Game Startup → Framework Initialization → Runtime Detection → Mod Analysis → Continuous Monitoring
+     ↓                    ↓                    ↓                ↓                ↓
+MainScript → ModCompatibilityFramework → ModRegistry → Runtime Analysis → EnhancementManager
 ```
 
 ## User Interface Features
@@ -62,11 +54,11 @@ MainScript → ModCompatibilityFramework → Reflection → ModRegistry → Enha
 
 The framework provides a comprehensive overlay interface (toggle with F10) displaying:
 
-- **Real-time Compatibility Status**: Live conflict counts and status indicators
-- **System Health Score**: 0-100 score with color-coded status
+- **Real-time Mod Status**: Live detection of loaded mods and their status
+- **System Health Score**: 0-100 score with color-coded status indicators
 - **Performance Metrics**: Memory usage, error counts, and system performance
-- **Conflict Details**: Comprehensive information about detected issues
-- **Resolution Suggestions**: Actionable advice for fixing conflicts
+- **Mod Information**: Details about detected mods and their runtime behavior
+- **System Monitoring**: Continuous health and performance tracking
 
 ### Key Binding Integration
 
@@ -74,98 +66,55 @@ The framework provides a comprehensive overlay interface (toggle with F10) displ
 - **Custom Key Page**: Integrated with game's settings menu
 - **Rebindable**: Players can customize the overlay key
 
-## Modder Integration
-
-### Integration Methods
-
-The framework supports two integration approaches:
-
-#### Method 1: Reflection-Based Discovery (Recommended)
-
-No imports required - implement standard methods in your SCRIPT class:
-
-```java
-public class YourModScript implements SCRIPT {
-    // Basic mod information
-    public String getModId() { return "your_mod_id"; }
-    public String getModName() { return "Your Mod Name"; }
-    public String getModVersion() { return "1.0.0"; }
-    
-    // Declare your modifications
-    public String[] getClassReplacements() {
-        return new String[] { "settlement.room.food.farm.FarmInstance" };
-    }
-    
-    public String[] getAssetModifications() {
-        return new String[] { "/data/assets/sprite/race/face/addon" };
-    }
-    
-    public String[] getDataModifications() {
-        return new String[] { "FACTION", "RACE" };
-    }
-    
-    public String[] getDependencies() {
-        return new String[] { "required_mod" };
-    }
-}
-```
-
-#### Method 2: Direct API Integration
-
-Full control with direct framework access:
-
-```java
-import sosModHooks.ModCompatibilityAPI;
-
-ModCompatibilityAPI api = ModCompatibilityAPI.getInstance();
-
-// Register your mod
-api.registerMod("myMod", "My Awesome Mod", "1.0.0", "Description", "Author");
-
-// Declare modifications
-api.declareClassReplacement("myMod", "settlement.room.food.farm.FarmInstance");
-api.declareAssetModification("myMod", "/data/assets/sprite/race/face/addon");
-api.declareDataModification("myMod", "FACTION", "RACE");
-api.declareDependency("myMod", "required_mod");
-
-// Check for conflicts
-if (api.hasConflicts()) {
-    List<ModConflict> conflicts = api.checkModConflicts("myMod");
-    // Handle conflicts appropriately
-}
-```
-
-### Declaration Types
-
-Mods can declare comprehensive modification information:
-
-| Type | Description | Example |
-|------|-------------|---------|
-| **Class Replacements** | Core classes completely replaced | `"settlement.room.food.farm.FarmInstance"` |
-| **Asset Modifications** | Sprite files, textures, sounds | `"/data/assets/sprite/race/face/addon"` |
-| **Data Modifications** | Game data structures | `"FACTION"`, `"RACE"`, `"EVENT"` |
-| **Dependencies** | Required mods | `"base_mod"`, `"library_mod"` |
-
 ## Installation and Setup
 
 ### For Players
 
 1. **Download the mod** from the workshop or releases
 2. **Place in mods folder**: Copy to your Songs of Syx mods directory
-3. **Enable in game**: Select sosModHooks when starting a new game
+3. **Enable in game**: sosModHooks loads automatically (no selection required)
 4. **Use F10**: Press F10 to access the compatibility overlay
-5. **Monitor console**: Check console output for compatibility information
+5. **Monitor console**: Check console output for detection information
 
 ### For Modders
 
-**No dependency required!** sosModHooks will automatically discover your mod if you implement the standard methods:
+**No integration required!** sosModHooks automatically detects your mods through the game's internal systems. The framework will:
 
-1. **Implement methods**: Add reflection methods to your SCRIPT class (see examples above)
-2. **Test compatibility**: Use the framework to verify your mod works with others
-3. **No imports needed**: The framework discovers mods automatically
+1. **Automatically detect** your mod when it's loaded by the game
+2. **Monitor runtime behavior** to understand what your mod is doing
+3. **Analyze compatibility** with other loaded mods
+4. **Provide feedback** through the F10 overlay
 
-### Additional Guides
+## Technical Details
 
-- **[MODDER_INTEGRATION_GUIDE.md](MODDER_INTEGRATION_GUIDE.md)**: Detailed integration instructions
-- **[MOD_INTEGRATION_TEMPLATE.java](MOD_INTEGRATION_TEMPLATE.java)**: Copy-paste integration template
-- **[INSTALL.md](INSTALL.md)**: Installation and setup instructions
+### Runtime Detection
+
+The framework operates entirely at runtime and does not require mods to implement specific interfaces. Instead, it:
+
+- Accesses the game's internal mod loading systems
+- Analyzes runtime classpath and JAR loading
+- Monitors system behavior and performance
+- Provides real-time compatibility analysis
+
+### Performance Impact
+
+- **Minimal overhead**: Designed for minimal performance impact
+- **Efficient monitoring**: Uses efficient detection methods
+- **Background operation**: Runs in background without affecting gameplay
+- **Smart caching**: Caches detection results to avoid repeated analysis
+
+## Current Status
+
+- ✅ **Runtime mod detection** via game internal systems
+- ✅ **F10 overlay UI** with comprehensive information
+- ✅ **System health monitoring** and performance tracking
+- ✅ **Automatic loading** without user selection
+- ✅ **Real-time compatibility analysis**
+
+## Development
+
+This project is built using Maven and requires Java 8 or higher. The framework is designed to work within the constraints of the Songs of Syx modding system without requiring modifications to core game files.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

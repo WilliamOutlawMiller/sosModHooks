@@ -18,13 +18,6 @@ public class BasicFunctionalityTest {
     }
     
     @Test
-    @DisplayName("Should create ModCompatibilityAPI instance")
-    void testAPIInstanceCreation() {
-        ModCompatibilityAPI api = ModCompatibilityAPI.getInstance();
-        assertNotNull(api, "ModCompatibilityAPI should be created");
-    }
-    
-    @Test
     @DisplayName("Should create ModDeclaration")
     void testModDeclarationCreation() {
         ModDeclaration declaration = new ModDeclaration("test_mod", "Test Mod", "1.0");

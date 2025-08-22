@@ -184,11 +184,12 @@ public final class ModCompatibilityFramework {
         public void hoverTimer(double mouseTimer, GBox text) {
             // Add compatibility info to tooltips
             if (mouseTimer > 1000) { // After 1 second hover
-                ModCompatibilityAPI api = ModCompatibilityAPI.getInstance();
-                if (api.hasConflicts()) {
-                    text.add(new util.info.INFO("Mod Compatibility", api.getConflictCount() + " conflicts detected"));
+                // Get compatibility status from registry
+                ModRegistry registry = ModRegistry.getInstance();
+                if (registry.isRuntimeDetectionComplete()) {
+                    text.add(new util.info.INFO("Mod Compatibility", "Mod detection complete"));
                 } else {
-                    text.add(new util.info.INFO("Mod Compatibility", "All mods compatible"));
+                    text.add(new util.info.INFO("Mod Compatibility", "Mod detection in progress"));
                 }
             }
         }
@@ -252,14 +253,11 @@ public final class ModCompatibilityFramework {
         }
 
         private void reportCompatibilityStatus() {
-            ModCompatibilityAPI api = ModCompatibilityAPI.getInstance();
-            if (api.hasConflicts()) {
-                // Removed annoying MessageText alert - keeping only console logging
-                System.out.println("sosModHooks: Mod compatibility issues detected - Press F10 for details");
-                System.out.println("sosModHooks: Total conflicts: " + api.getConflictCount());
+            ModRegistry registry = ModRegistry.getInstance();
+            if (registry.isRuntimeDetectionComplete()) {
+                System.out.println("sosModHooks: Mod detection complete - Press F10 for details");
             } else {
-                // Removed annoying MessageText alert - keeping only console logging
-                System.out.println("sosModHooks: All mods appear compatible!");
+                System.out.println("sosModHooks: Mod detection in progress...");
             }
         }
 
@@ -278,11 +276,8 @@ public final class ModCompatibilityFramework {
             // Render compatibility status
             renderCompatibilityStatus(r, screenWidth, screenHeight);
             
-            // Render conflict details if any
-            ModCompatibilityAPI api = ModCompatibilityAPI.getInstance();
-            if (api.hasConflicts()) {
-                renderConflictDetails(r, screenWidth, screenHeight);
-            }
+            // Render mod details to show what each mod is doing
+            renderModDetails(r, screenWidth, screenHeight);
             
             // Always render mod details to show what each mod is doing
             renderModDetails(r, screenWidth, screenHeight);
@@ -312,28 +307,27 @@ public final class ModCompatibilityFramework {
             int panelX = screenWidth - 400 - 20;
             int panelY = 20;
             
-            ModCompatibilityAPI api = ModCompatibilityAPI.getInstance();
+            ModRegistry registry = ModRegistry.getInstance();
             
             // Title using game's native heading colors
             util.colors.GCOLOR.T().H1.bind();
-            renderText(r, "Mod Compatibility Status", panelX + 10, panelY + 20, 16);
+            renderText(r, "Mod Detection Status", panelX + 10, panelY + 20, 16);
             
             // Status indicator using game's native text colors
-            if (api.hasConflicts()) {
-                util.colors.GCOLOR.T().WARNING.bind();
-                renderText(r, "⚠️ Conflicts Detected", panelX + 10, panelY + 45, 14);
-            } else {
+            if (registry.isRuntimeDetectionComplete()) {
                 util.colors.GCOLOR.T().IGOOD.bind();
-                renderText(r, "✓ All Mods Compatible", panelX + 10, panelY + 45, 14);
+                renderText(r, "✓ Mod Detection Complete", panelX + 10, panelY + 45, 14);
+            } else {
+                util.colors.GCOLOR.T().WARNING.bind();
+                renderText(r, "⏳ Detection In Progress", panelX + 10, panelY + 45, 14);
             }
             
             // Summary using game's native normal text color
             util.colors.GCOLOR.T().NORMAL.bind();
-            renderText(r, "Total Conflicts: " + api.getConflictCount(), panelX + 10, panelY + 65, 12);
+            renderText(r, "Detection Status: " + (registry.isRuntimeDetectionComplete() ? "Complete" : "In Progress"), panelX + 10, panelY + 65, 12);
             
             // Show total mods detected
-            ModRegistry registry = ModRegistry.getInstance();
-            renderText(r, "Total Mods Detected: " + registry.getModCount(), panelX + 10, panelY + 80, 12);
+            renderText(r, "Total Mods Detected: " + registry.getActiveMods().size(), panelX + 10, panelY + 80, 12);
             
             // System Health using game's native text colors
             int healthScore = enhancementManager.getSystemHealthScore();
@@ -363,13 +357,14 @@ public final class ModCompatibilityFramework {
             snake2d.util.color.COLOR.unbind();
         }
         
+        // Conflict detection not implemented in current version
         private void renderConflictDetails(snake2d.Renderer r, int screenWidth, int screenHeight) {
             int panelX = screenWidth - 400 - 20;
             int panelY = 20;
             int startY = panelY + 140; // Start below the main status section
             
-            ModCompatibilityAPI api = ModCompatibilityAPI.getInstance();
-            snake2d.util.sets.LIST<ModConflict> conflicts = api.getAllConflicts();
+            ModRegistry registry = ModRegistry.getInstance();
+            // Note: Conflict detection not implemented in current version
             
             // Header using game's native heading colors
             util.colors.GCOLOR.T().H2.bind();
@@ -433,9 +428,9 @@ public final class ModCompatibilityFramework {
             int startY = panelY + 140; // Start below the main status section
             
             ModRegistry registry = ModRegistry.getInstance();
-            Map<String, ModDeclaration> mods = registry.getAllMods();
+            Map<String, ModRegistry.ActiveModInfo> activeMods = registry.getActiveMods();
             
-            if (mods.isEmpty()) {
+            if (activeMods.isEmpty()) {
                 // No mods detected
                 util.colors.GCOLOR.T().NORMAL.bind();
                 renderText(r, "No mods detected - scanning may not be complete", panelX + 10, startY, 10);
@@ -448,13 +443,13 @@ public final class ModCompatibilityFramework {
             startY += 20;
             
             // Show each mod's details
-            for (Map.Entry<String, ModDeclaration> entry : mods.entrySet()) {
+            for (Map.Entry<String, ModRegistry.ActiveModInfo> entry : activeMods.entrySet()) {
                 String modId = entry.getKey();
-                ModDeclaration mod = entry.getValue();
+                ModRegistry.ActiveModInfo modInfo = entry.getValue();
                 
                 // Mod name using normal text color
                 util.colors.GCOLOR.T().NORMAL.bind();
-                renderText(r, "• " + mod.getName() + " (v" + mod.getVersion() + ")", panelX + 15, startY, 12);
+                renderText(r, "• " + modInfo.modName + " (v" + modInfo.modVersion + ")", panelX + 15, startY, 12);
                 startY += 15;
                 
                 // Show what this mod is modifying
