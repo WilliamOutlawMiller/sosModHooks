@@ -25,7 +25,7 @@ public final class MainScript implements SCRIPT {
 
 	@Override
 	public CharSequence name() {
-		return info.name;
+		return "sosModHooks";
 	}
 
 	@Override
@@ -39,8 +39,35 @@ public final class MainScript implements SCRIPT {
 	@Override
 	public void initBeforeGameCreated() {
 		System.out.println("sosModHooks: initBeforeGameCreated called");
+		
+		// Phase 1: Detect which mods are actually activated and loaded by the game
+		try {
+			System.out.println("sosModHooks: Starting runtime active mod detection...");
+			ModRegistry.getInstance().detectActiveMods();
+			System.out.println("sosModHooks: Runtime active mod detection complete");
+		} catch (Exception e) {
+			System.err.println("sosModHooks: Error in runtime active mod detection: " + e.getMessage());
+		}
+		
 		// Key bindings will be initialized later when the KEYS system is ready
 		// during the update loop in ModCompatibilityFramework
+	}
+
+	/**
+	 * Called after the game has been created, but before everything has been tightened
+	 */
+	@Override
+	public void initBeforeGameInited() {
+		System.out.println("sosModHooks: initBeforeGameInited called");
+		
+		// Phase 2: Analyze the runtime effects of active mods and detect conflicts
+		try {
+			System.out.println("sosModHooks: Starting runtime effects analysis...");
+			ModRegistry.getInstance().analyzeRuntimeEffects();
+			System.out.println("sosModHooks: Runtime effects analysis complete");
+		} catch (Exception e) {
+			System.err.println("sosModHooks: Error in runtime effects analysis: " + e.getMessage());
+		}
 	}
 
 
@@ -49,7 +76,7 @@ public final class MainScript implements SCRIPT {
 	 */
 	@Override
 	public boolean isSelectable() {
-		return SCRIPT.super.isSelectable();
+		return false; // Make sosModHooks automatically load without requiring selection
 	}
 
 	/**

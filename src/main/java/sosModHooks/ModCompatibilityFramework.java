@@ -29,10 +29,12 @@ public final class ModCompatibilityFramework {
 
     private final ModConflictReporter reporter;
     private final ModEnhancementManager enhancementManager;
+    private final ComprehensiveModOverlay comprehensiveOverlay;
 
     public ModCompatibilityFramework() {
         this.reporter = new ModConflictReporter();
         this.enhancementManager = new ModEnhancementManager();
+        this.comprehensiveOverlay = new ComprehensiveModOverlay();
         
         System.out.println("sosModHooks: ModCompatibilityFramework constructor called");
     }
@@ -54,13 +56,26 @@ public final class ModCompatibilityFramework {
                 try {
                     System.out.println("sosModHooks: Initializing mod registry at tick " + tickCounter);
                     
-                    // Initialize mod registry
+                    // Check if runtime detection is complete
+                    if (ModRegistry.getInstance().isRuntimeDetectionComplete()) {
+                        System.out.println("sosModHooks: Runtime detection complete, detecting conflicts...");
+                        
+                        // Detect conflicts using the unified registry system
+                        snake2d.util.sets.LIST<ModConflict> conflicts = ModRegistry.getInstance().detectConflicts();
+                        System.out.println("sosModHooks: Detected " + conflicts.size() + " conflicts using runtime detection system");
+                        
+                        // Report active mods
+                        Map<String, String> activeMods = ModRegistry.getInstance().getActiveModNames();
+                        System.out.println("sosModHooks: Active mods detected: " + activeMods.size());
+                        for (Map.Entry<String, String> entry : activeMods.entrySet()) {
+                            System.out.println("  - " + entry.getKey() + ": " + entry.getValue());
+                        }
+                        
+                        System.out.println("sosModHooks: Mod registry initialized successfully with runtime detection");
+                    } else {
+                        System.out.println("sosModHooks: Runtime detection not complete yet, waiting...");
+                    }
                     
-                    // Detect conflicts using the new registry system
-                    snake2d.util.sets.LIST<ModConflict> conflicts = ModRegistry.getInstance().detectConflicts();
-                    System.out.println("sosModHooks: Detected " + conflicts.size() + " conflicts using new registry system");
-                    
-                    System.out.println("sosModHooks: Mod registry initialized successfully");
                 } catch (Exception e) {
                     System.err.println("sosModHooks: Failed to initialize mod registry: " + e.getMessage());
                 }
@@ -96,8 +111,8 @@ public final class ModCompatibilityFramework {
             
             // Check for mod compatibility overlay key press
             if (ModKeyBindings.getInstance().isModCompatibilityOverlayPressed()) {
-                System.out.println("sosModHooks: Mod compatibility overlay key pressed - toggling overlay");
-                reporter.toggleOverlay();
+                System.out.println("sosModHooks: Mod compatibility overlay key pressed - toggling comprehensive overlay");
+                comprehensiveOverlay.toggle();
                 // Add a small delay to prevent multiple toggles
                 try {
                     Thread.sleep(100);
@@ -141,197 +156,8 @@ public final class ModCompatibilityFramework {
             }
         }
         
-        /**
-         * Auto-register existing mods for backward compatibility.
-         * This allows the new system to work with mods that haven't been updated yet.
-         * 
-         * NEW APPROACH: Instead of requiring mods to import our classes,
-         * we'll detect them automatically and provide a way for them to
-         * declare their changes through reflection or simple methods.
-         */
-        private void autoRegisterExistingMods() {
-            try {
-                // This method has been removed - no longer needed
-                
-                // Get loaded scripts and register them with basic info
-                LIST<SCRIPT> loadedScripts = getLoadedScripts();
-                for (SCRIPT script : loadedScripts) {
-                    String modName = script.name().toString();
-                    String modId = modName.toLowerCase().replaceAll("[^a-z0-9_]", "_");
-                    
-                    // Auto-register with basic info
-                    ModRegistry.getInstance().registerMod(modId, modName, "unknown");
-                    
-                    // Try to detect what this mod modifies based on its name
-                    if (modName.toLowerCase().contains("warhammer")) {
-                        ModRegistry.getInstance().declareAssetModification(modId, 
-                            "/data/assets/sprite/race/face/addon",
-                            "/data/assets/init/race/sprite",
-                            "/data/assets/text/event"
-                        );
-                        ModRegistry.getInstance().declareDataModification(modId, "FACTION", "RACE", "EVENT");
-                    }
-                    
-                    if (modName.toLowerCase().contains("farm") || modName.toLowerCase().contains("agriculture")) {
-                        ModRegistry.getInstance().declareClassReplacement(modId, 
-                            "settlement.room.food.farm.FarmInstance",
-                            "settlement.room.food.farm.ROOM_FARM"
-                        );
-                    }
-                    
-                    if (modName.toLowerCase().contains("tech") || modName.toLowerCase().contains("technology")) {
-                        ModRegistry.getInstance().declareClassReplacement(modId, 
-                            "init.tech.TECH",
-                            "init.tech.Knowledge_Costs"
-                        );
-                    }
-                    
-                    // NEW: Try to discover mod declarations through reflection
-                    discoverModDeclarations(script, modId);
-                }
-                
-                System.out.println("sosModHooks: Auto-registered " + loadedScripts.size() + " existing mods");
-                
-            } catch (Exception e) {
-                System.err.println("sosModHooks: Failed to auto-register existing mods: " + e.getMessage());
-            }
-        }
         
-        /**
-         * NEW APPROACH: Discover mod declarations through reflection.
-         * This allows mods to declare their changes without importing our classes.
-         * 
-         * Mods can implement these methods to declare their changes:
-         * - getModId() - returns the mod's unique identifier
-         * - getModName() - returns the mod's display name
-         * - getModVersion() - returns the mod's version
-         * - getClassReplacements() - returns array of replaced class names
-         * - getAssetModifications() - returns array of modified asset paths
-         * - getDataModifications() - returns array of modified data types
-         * - getDependencies() - returns array of required mod IDs
-         */
-        private void discoverModDeclarations(SCRIPT script, String defaultModId) {
-            try {
-                Class<?> scriptClass = script.getClass();
-                
-                // Try to get mod ID
-                String modId = invokeStringMethod(scriptClass, script, "getModId");
-                if (modId == null) modId = defaultModId;
-                
-                // Try to get mod name
-                String modName = invokeStringMethod(scriptClass, script, "getModName");
-                if (modName == null) modName = script.name().toString();
-                
-                // Try to get mod version
-                String modVersion = invokeStringMethod(scriptClass, script, "getModVersion");
-                if (modVersion == null) modVersion = "unknown";
-                
-                // Update registration with discovered info
-                ModRegistry.getInstance().registerMod(modId, modName, modVersion);
-                
-                // Try to discover class replacements
-                String[] classReplacements = invokeStringArrayMethod(scriptClass, script, "getClassReplacements");
-                if (classReplacements != null && classReplacements.length > 0) {
-                    ModRegistry.getInstance().declareClassReplacement(modId, classReplacements);
-                }
-                
-                // Try to discover asset modifications
-                String[] assetModifications = invokeStringArrayMethod(scriptClass, script, "getAssetModifications");
-                if (assetModifications != null && assetModifications.length > 0) {
-                    ModRegistry.getInstance().declareAssetModification(modId, assetModifications);
-                }
-                
-                // Try to discover data modifications
-                String[] dataModifications = invokeStringArrayMethod(scriptClass, script, "getDataModifications");
-                if (dataModifications != null && dataModifications.length > 0) {
-                    ModRegistry.getInstance().declareDataModification(modId, dataModifications);
-                }
-                
-                // Try to discover dependencies
-                String[] dependencies = invokeStringArrayMethod(scriptClass, script, "getDependencies");
-                if (dependencies != null && dependencies.length > 0) {
-                    ModRegistry.getInstance().declareDependency(modId, dependencies);
-                }
-                
-                System.out.println("sosModHooks: Discovered declarations for mod: " + modId);
-                
-            } catch (Exception e) {
-                System.err.println("sosModHooks: Failed to discover declarations for mod " + defaultModId + ": " + e.getMessage());
-            }
-        }
-        
-        /**
-         * Helper method to invoke a method that returns a String.
-         */
-        private String invokeStringMethod(Class<?> scriptClass, SCRIPT script, String methodName) {
-            try {
-                java.lang.reflect.Method method = scriptClass.getDeclaredMethod(methodName);
-                method.setAccessible(true);
-                Object result = method.invoke(script);
-                return result != null ? result.toString() : null;
-            } catch (Exception e) {
-                // Method doesn't exist or failed - that's okay
-                return null;
-            }
-        }
-        
-        /**
-         * Helper method to invoke a method that returns a String array.
-         */
-        private String[] invokeStringArrayMethod(Class<?> scriptClass, SCRIPT script, String methodName) {
-            try {
-                java.lang.reflect.Method method = scriptClass.getDeclaredMethod(methodName);
-                method.setAccessible(true);
-                Object result = method.invoke(script);
-                if (result instanceof String[]) {
-                    return (String[]) result;
-                }
-                return null;
-            } catch (Exception e) {
-                // Method doesn't exist or failed - that's okay
-                return null;
-            }
-        }
-        
-        /**
-         * Get loaded scripts using the old scanner method for backward compatibility.
-         */
-        private LIST<SCRIPT> getLoadedScripts() {
-            try {
-                // Use reflection to access the game's script loading system
-                Class<?> scriptLoadClass = Class.forName("script.ScriptLoad");
-                java.lang.reflect.Method getAllMethod = scriptLoadClass.getDeclaredMethod("getAll");
-                getAllMethod.setAccessible(true);
-                
-                Object scriptLoads = getAllMethod.invoke(null);
-                if (scriptLoads instanceof LIST) {
-                    LIST<?> scriptLoadList = (LIST<?>) scriptLoads;
-                    snake2d.util.sets.ArrayList<SCRIPT> scripts = new snake2d.util.sets.ArrayList<>();
-                    
-                    for (Object scriptLoad : scriptLoadList) {
-                        try {
-                            // Extract the SCRIPT instance from ScriptLoad object
-                            java.lang.reflect.Field scriptField = scriptLoad.getClass().getDeclaredField("script");
-                            scriptField.setAccessible(true);
-                            Object script = scriptField.get(scriptLoad);
-                            
-                            if (script instanceof SCRIPT) {
-                                scripts.add((SCRIPT) script);
-                            }
-                        } catch (Exception e) {
-                            // Skip this script if we can't extract it
-                        }
-                    }
-                    
-                    return scripts;
-                }
-            } catch (Exception e) {
-                System.err.println("sosModHooks: Error accessing loaded scripts: " + e.getMessage());
-            }
-            
-            // Fallback to empty list if reflection fails
-            return new snake2d.util.sets.ArrayList<>();
-        }
+
 
         @Override
         public void save(snake2d.util.file.FilePutter file) {
@@ -369,18 +195,18 @@ public final class ModCompatibilityFramework {
 
         @Override
         public void render(snake2d.Renderer r, float ds) {
-            // Render the compatibility overlay if it's visible
-            if (reporter.isOverlayVisible()) {
+            // Render the comprehensive mod overlay if it's visible
+            if (comprehensiveOverlay.isVisible()) {
                 try {
-                    System.out.println("sosModHooks: Rendering overlay");
-                    renderCompatibilityOverlay(r);
-                    System.out.println("sosModHooks: Overlay rendered successfully");
+                    System.out.println("sosModHooks: Rendering comprehensive overlay");
+                    comprehensiveOverlay.render(r);
+                    System.out.println("sosModHooks: Comprehensive overlay rendered successfully");
                 } catch (Exception e) {
-                    System.err.println("sosModHooks: Error rendering overlay: " + e.getMessage());
+                    System.err.println("sosModHooks: Error rendering comprehensive overlay: " + e.getMessage());
                     e.printStackTrace();
                 }
             } else if (tickCounter % 300 == 0) { // Log every 5 seconds
-                System.out.println("sosModHooks: render() called - overlay not visible");
+                System.out.println("sosModHooks: render() called - comprehensive overlay not visible");
             }
         }
 
@@ -392,12 +218,32 @@ public final class ModCompatibilityFramework {
 
         @Override
         public void mouseClick(snake2d.MButt button) {
-            // Handle compatibility UI interactions
+            // Handle comprehensive overlay interactions
+            if (comprehensiveOverlay.isVisible()) {
+                try {
+                    // Mouse coordinates will be handled in the hover method
+                    // For now, just pass a default position
+                    comprehensiveOverlay.handleMouseClick(0, 0, button.ordinal());
+                } catch (Exception e) {
+                    System.err.println("sosModHooks: Error handling mouse click for comprehensive overlay: " + e.getMessage());
+                }
+            }
         }
 
         @Override
         public void hover(snake2d.util.datatypes.COORDINATE mCoo, boolean mouseHasMoved) {
-            // Handle hover interactions
+            // Handle comprehensive overlay hover interactions
+            if (comprehensiveOverlay.isVisible() && mouseHasMoved) {
+                try {
+                    // Get mouse coordinates from the coordinate object
+                    int mouseX = mCoo.x();
+                    int mouseY = mCoo.y();
+                    
+                    comprehensiveOverlay.handleMouseMove(mouseX, mouseY);
+                } catch (Exception e) {
+                    System.err.println("sosModHooks: Error handling mouse hover for comprehensive overlay: " + e.getMessage());
+                }
+            }
         }
 
         @Override
@@ -437,6 +283,9 @@ public final class ModCompatibilityFramework {
             if (api.hasConflicts()) {
                 renderConflictDetails(r, screenWidth, screenHeight);
             }
+            
+            // Always render mod details to show what each mod is doing
+            renderModDetails(r, screenWidth, screenHeight);
             
             // Render instructions
             renderInstructions(r, screenWidth, screenHeight);
@@ -482,6 +331,10 @@ public final class ModCompatibilityFramework {
             util.colors.GCOLOR.T().NORMAL.bind();
             renderText(r, "Total Conflicts: " + api.getConflictCount(), panelX + 10, panelY + 65, 12);
             
+            // Show total mods detected
+            ModRegistry registry = ModRegistry.getInstance();
+            renderText(r, "Total Mods Detected: " + registry.getModCount(), panelX + 10, panelY + 80, 12);
+            
             // System Health using game's native text colors
             int healthScore = enhancementManager.getSystemHealthScore();
             String healthStatus = enhancementManager.getSystemHealthStatus();
@@ -497,14 +350,14 @@ public final class ModCompatibilityFramework {
                 util.colors.GCOLOR.T().IWORST.bind();
             }
             
-            renderText(r, "System Health: " + healthStatus + " (" + healthScore + "/100)", panelX + 10, panelY + 85, 12);
+            renderText(r, "System Health: " + healthStatus + " (" + healthScore + "/100)", panelX + 10, panelY + 100, 12);
             
             // Performance info using normal text color
             util.colors.GCOLOR.T().NORMAL.bind();
             Map<String, Long> metrics = enhancementManager.getPerformanceMetrics();
             if (metrics.containsKey("memory_percentage")) {
                 long memoryPercent = metrics.get("memory_percentage");
-                renderText(r, "Memory Usage: " + memoryPercent + "%", panelX + 10, panelY + 105, 10);
+                renderText(r, "Memory Usage: " + memoryPercent + "%", panelX + 10, panelY + 120, 10);
             }
             
             snake2d.util.color.COLOR.unbind();
@@ -513,7 +366,7 @@ public final class ModCompatibilityFramework {
         private void renderConflictDetails(snake2d.Renderer r, int screenWidth, int screenHeight) {
             int panelX = screenWidth - 400 - 20;
             int panelY = 20;
-            int startY = panelY + 90;
+            int startY = panelY + 140; // Start below the main status section
             
             ModCompatibilityAPI api = ModCompatibilityAPI.getInstance();
             snake2d.util.sets.LIST<ModConflict> conflicts = api.getAllConflicts();
@@ -521,11 +374,10 @@ public final class ModCompatibilityFramework {
             // Header using game's native heading colors
             util.colors.GCOLOR.T().H2.bind();
             renderText(r, "Conflict Details:", panelX + 10, startY, 14);
-            
             startY += 20;
             
             // Show first few conflicts (limit to avoid overwhelming the UI)
-            int maxConflicts = 5;
+            int maxConflicts = 3; // Reduced to make room for mod details
             int conflictCount = 0;
             
             for (ModConflict conflict : conflicts) {
@@ -547,6 +399,15 @@ public final class ModCompatibilityFramework {
                 util.colors.GCOLOR.T().NORMAL.bind();
                 renderText(r, "  Mods: " + getModsString(conflict.getConflictingMods()), panelX + 20, startY, 10);
                 
+                startY += 15;
+                // Conflict description using normal text color
+                util.colors.GCOLOR.T().NORMAL.bind();
+                String description = conflict.getSummary();
+                if (description.length() > 50) {
+                    description = description.substring(0, 47) + "...";
+                }
+                renderText(r, "  Issue: " + description, panelX + 20, startY, 10);
+                
                 startY += 20;
                 conflictCount++;
             }
@@ -554,8 +415,81 @@ public final class ModCompatibilityFramework {
             if (conflicts.size() > maxConflicts) {
                 // Additional conflicts info using normal text color
                 util.colors.GCOLOR.T().NORMAL.bind();
-                renderText(r, "... and " + (conflicts.size() - maxConflicts) + " more", 
+                renderText(r, "... and " + (conflicts.size() - maxConflicts) + " more conflicts", 
                            panelX + 15, startY, 10);
+                startY += 15;
+            }
+            
+            // Add conflict resolution advice
+            if (conflicts.size() > 0) {
+                util.colors.GCOLOR.T().INORMAL.bind();
+                renderText(r, "Press F10 again to see detailed mod information", panelX + 15, startY, 10);
+            }
+        }
+        
+        private void renderModDetails(snake2d.Renderer r, int screenWidth, int screenHeight) {
+            int panelX = screenWidth - 400 - 20;
+            int panelY = 20;
+            int startY = panelY + 140; // Start below the main status section
+            
+            ModRegistry registry = ModRegistry.getInstance();
+            Map<String, ModDeclaration> mods = registry.getAllMods();
+            
+            if (mods.isEmpty()) {
+                // No mods detected
+                util.colors.GCOLOR.T().NORMAL.bind();
+                renderText(r, "No mods detected - scanning may not be complete", panelX + 10, startY, 10);
+                return;
+            }
+            
+            // Header using game's native heading colors
+            util.colors.GCOLOR.T().H2.bind();
+            renderText(r, "Detected Mods:", panelX + 10, startY, 14);
+            startY += 20;
+            
+            // Show each mod's details
+            for (Map.Entry<String, ModDeclaration> entry : mods.entrySet()) {
+                String modId = entry.getKey();
+                ModDeclaration mod = entry.getValue();
+                
+                // Mod name using normal text color
+                util.colors.GCOLOR.T().NORMAL.bind();
+                renderText(r, "• " + mod.getName() + " (v" + mod.getVersion() + ")", panelX + 15, startY, 12);
+                startY += 15;
+                
+                // Show what this mod is modifying
+                showModModifications(r, panelX, startY, modId, registry);
+                startY += 25; // Extra space between mods
+            }
+        }
+        
+        private void showModModifications(snake2d.Renderer r, int panelX, int startY, String modId, ModRegistry registry) {
+            // Show class replacements
+            if (registry.getClassReplacements().containsKey(modId)) {
+                util.colors.GCOLOR.T().WARNING.bind();
+                renderText(r, "  Classes: " + getModificationsString(registry.getClassReplacements().get(modId)), panelX + 20, startY, 10);
+                startY += 15;
+            }
+            
+            // Show asset modifications
+            if (registry.getAssetModifications().containsKey(modId)) {
+                util.colors.GCOLOR.T().WARNING.bind();
+                renderText(r, "  Assets: " + getModificationsString(registry.getAssetModifications().get(modId)), panelX + 20, startY, 10);
+                startY += 15;
+            }
+            
+            // Show data modifications
+            if (registry.getDataModifications().containsKey(modId)) {
+                util.colors.GCOLOR.T().WARNING.bind();
+                renderText(r, "  Data: " + getModificationsString(registry.getDataModifications().get(modId)), panelX + 20, startY, 10);
+                startY += 15;
+            }
+            
+            // Show dependencies
+            if (registry.getDependencies().containsKey(modId)) {
+                util.colors.GCOLOR.T().INORMAL.bind();
+                renderText(r, "  Dependencies: " + getModificationsString(registry.getDependencies().get(modId)), panelX + 20, startY, 10);
+                startY += 15;
             }
         }
         
@@ -598,6 +532,15 @@ public final class ModCompatibilityFramework {
             for (int i = 0; i < mods.size(); i++) {
                 if (i > 0) sb.append(", ");
                 sb.append(mods.get(i));
+            }
+            return sb.toString();
+        }
+
+        private String getModificationsString(snake2d.util.sets.LIST<String> modifications) {
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < modifications.size(); i++) {
+                if (i > 0) sb.append(", ");
+                sb.append(modifications.get(i));
             }
             return sb.toString();
         }

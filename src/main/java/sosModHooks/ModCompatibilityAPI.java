@@ -125,15 +125,7 @@ public final class ModCompatibilityAPI {
         return modConflicts;
     }
     
-    /**
-     * Get a summary of all registered mods and their changes.
-     * Useful for debugging and understanding the mod landscape.
-     * 
-     * @return Human-readable summary of all mods
-     */
-    public String getModSummary() {
-        return registry.getModSummary();
-    }
+
     
     /**
      * Get the total number of conflicts detected.
