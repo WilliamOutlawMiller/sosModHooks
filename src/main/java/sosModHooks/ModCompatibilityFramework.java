@@ -45,7 +45,7 @@ public final class ModCompatibilityFramework {
      */
     public class CompatibilityFrameworkInstance implements SCRIPT.SCRIPT_INSTANCE {
         
-        private boolean hasReportedConflicts = false;
+        private boolean hasReportedStatus = false;
         private int tickCounter = 0;
 
         @Override
@@ -59,19 +59,7 @@ public final class ModCompatibilityFramework {
                     
                     // Check if runtime detection is complete
                     if (ModRegistry.getInstance().isRuntimeDetectionComplete()) {
-                        System.out.println("sosModHooks: Runtime detection complete, detecting conflicts...");
-                        
-                        // Detect conflicts using the unified registry system
-                        snake2d.util.sets.LIST<ModConflict> conflicts = ModRegistry.getInstance().detectConflicts();
-                        System.out.println("sosModHooks: Detected " + conflicts.size() + " conflicts using runtime detection system");
-                        
-                        // Report active mods
-                        Map<String, String> activeMods = ModRegistry.getInstance().getActiveModNames();
-                        System.out.println("sosModHooks: Active mods detected: " + activeMods.size());
-                        for (Map.Entry<String, String> entry : activeMods.entrySet()) {
-                            System.out.println("  - " + entry.getKey() + ": " + entry.getValue());
-                        }
-                        
+                        System.out.println("sosModHooks: Runtime detection complete");
                         System.out.println("sosModHooks: Mod registry initialized successfully with runtime detection");
                     } else {
                         System.out.println("sosModHooks: Runtime detection not complete yet, waiting...");
@@ -82,31 +70,20 @@ public final class ModCompatibilityFramework {
                 }
             }
             
-            // Try to initialize key bindings if not ready yet
-            if (tickCounter == 30 && !ModKeyBindings.getInstance().isInitialized()) { // After 0.5 seconds
+            // Initialize key bindings when ready (after 0.5 seconds)
+            if (tickCounter == 30 && !ModKeyBindings.getInstance().isInitialized()) {
                 try {
-                    System.out.println("sosModHooks: Attempting to initialize key bindings at tick " + tickCounter);
+                    System.out.println("sosModHooks: Initializing key bindings at tick " + tickCounter);
                     ModKeyBindings.getInstance().initialize();
                 } catch (Exception e) {
-                    System.err.println("sosModHooks: Initial key binding initialization failed: " + e.getMessage());
-                    // Don't log the full stack trace here to avoid spam
+                    System.err.println("sosModHooks: Key binding initialization failed: " + e.getMessage());
                 }
             }
             
-            // Retry initialization if still not ready after 2 seconds
-            if (tickCounter == 120 && !ModKeyBindings.getInstance().isInitialized()) { // After 2 seconds
-                try {
-                    System.out.println("sosModHooks: Retrying key binding initialization at tick " + tickCounter);
-                    ModKeyBindings.getInstance().initialize();
-                } catch (Exception e) {
-                    System.err.println("sosModHooks: Retry key binding initialization failed: " + e.getMessage());
-                }
-            }
-            
-            // Report conflicts once after game starts
-            if (tickCounter == 60 && !hasReportedConflicts) { // After 1 second
+            // Report compatibility status once after game starts
+            if (tickCounter == 60 && !hasReportedStatus) { // After 1 second
                 reportCompatibilityStatus();
-                hasReportedConflicts = true;
+                hasReportedStatus = true;
                 System.out.println("sosModHooks: Initial compatibility report sent");
             }
             
@@ -114,45 +91,10 @@ public final class ModCompatibilityFramework {
             if (ModKeyBindings.getInstance().isModCompatibilityOverlayPressed()) {
                 System.out.println("sosModHooks: Mod compatibility overlay key pressed - toggling comprehensive overlay");
                 comprehensiveOverlay.toggle();
-                // Add a small delay to prevent multiple toggles
-                try {
-                    Thread.sleep(100);
-                } catch (InterruptedException e) {
-                    // Ignore interruption
-                }
-            } else if (tickCounter % 300 == 0) { // Log every 5 seconds
-                // Debug key binding status
-                Key modKey = ModKeyBindings.getInstance().getModCompatibilityOverlayKey();
-                if (modKey != null) {
-                    System.out.println("sosModHooks: Mod key exists: " + modKey.name);
-                    System.out.println("sosModHooks: Mod key modCode: " + modKey.modCode() + ", keyCode: " + modKey.keyCode());
-                    System.out.println("sosModHooks: Mod key rebindable: " + modKey.rebindable);
-                    
-                    // Check if the key is in the MAIN page
-                    KeyPage mainPage = KEYS.MAIN();
-                    if (mainPage != null) {
-                        boolean foundInPage = false;
-                        for (int i = 0; i < mainPage.all().size(); i++) {
-                            Key k = mainPage.all().get(i);
-                            if (k == modKey) {
-                                foundInPage = true;
-                                System.out.println("sosModHooks: Mod key found in MAIN page at index " + i);
-                                break;
-                            }
-                        }
-                        if (!foundInPage) {
-                            System.out.println("sosModHooks: WARNING: Mod key NOT found in MAIN page!");
-                        }
-                    } else {
-                        System.out.println("sosModHooks: MAIN page is still null - KEYS system not ready");
-                    }
-                } else {
-                    System.out.println("sosModHooks: Mod key is null - key binding system not working");
-                }
             }
             
-            // Log mod activity periodically to confirm it's running
-            if (tickCounter % 300 == 0) { // Every 5 seconds
+            // Log mod activity periodically (reduced frequency to avoid spam)
+            if (tickCounter % 1800 == 0) { // Every 30 seconds instead of 5
                 System.out.println("sosModHooks: Mod is running - tick: " + tickCounter + ", key bindings initialized: " + ModKeyBindings.getInstance().isInitialized());
             }
         }
@@ -162,23 +104,12 @@ public final class ModCompatibilityFramework {
 
         @Override
         public void save(snake2d.util.file.FilePutter file) {
-            // TEMPORARILY DISABLED: Save functionality disabled to prevent corruption
-            // This will be re-enabled once we resolve the underlying issue
-            try {
-                // Write safe empty data to prevent any corruption
-                file.chars("{}");
-                System.out.println("sosModHooks: Save functionality temporarily disabled - safe empty data written");
-            } catch (Exception e) {
-                System.err.println("sosModHooks: Critical error writing save data: " + e.getMessage());
-            }
+            // No save data needed for this mod
         }
 
         @Override
         public void load(snake2d.util.file.FileGetter file) throws IOException {
-            // TEMPORARILY DISABLED: Load functionality disabled to prevent corruption
-            // This will be re-enabled once we resolve the underlying issue
-            System.out.println("sosModHooks: Load functionality temporarily disabled - using default data");
-            // Don't read any data from the file to prevent corruption
+            // No load data needed for this mod
         }
 
         @Override
@@ -200,15 +131,10 @@ public final class ModCompatibilityFramework {
             // Render the comprehensive mod overlay if it's visible
             if (comprehensiveOverlay.isVisible()) {
                 try {
-                    System.out.println("sosModHooks: Rendering comprehensive overlay");
                     comprehensiveOverlay.render(r);
-                    System.out.println("sosModHooks: Comprehensive overlay rendered successfully");
                 } catch (Exception e) {
                     System.err.println("sosModHooks: Error rendering comprehensive overlay: " + e.getMessage());
-                    e.printStackTrace();
                 }
-            } else if (tickCounter % 300 == 0) { // Log every 5 seconds
-                System.out.println("sosModHooks: render() called - comprehensive overlay not visible");
             }
         }
 
@@ -223,9 +149,10 @@ public final class ModCompatibilityFramework {
             // Handle comprehensive overlay interactions
             if (comprehensiveOverlay.isVisible()) {
                 try {
-                    // Mouse coordinates will be handled in the hover method
-                    // For now, just pass a default position
-                    comprehensiveOverlay.handleMouseClick(0, 0, button.ordinal());
+                    // Get current mouse position from the game's input system
+                    int mouseX = snake2d.CORE.getInput().getMouse().getCoo().x();
+                    int mouseY = snake2d.CORE.getInput().getMouse().getCoo().y();
+                    comprehensiveOverlay.handleMouseClick(mouseX, mouseY, button.ordinal());
                 } catch (Exception e) {
                     System.err.println("sosModHooks: Error handling mouse click for comprehensive overlay: " + e.getMessage());
                 }

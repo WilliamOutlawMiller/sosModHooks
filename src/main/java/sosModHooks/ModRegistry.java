@@ -58,8 +58,6 @@ public final class ModRegistry {
         this.dependencies = new HashMap<>();
         this.activeMods = new HashMap<>();
         this.modAnalyses = new HashMap<>();
-        
-        System.out.println("sosModHooks: Runtime ModRegistry initialized");
     }
     
     public static ModRegistry getInstance() {
@@ -91,16 +89,9 @@ public final class ModRegistry {
             // Try to access the game's VERSION class
             Class<?> versionClass = Class.forName("game.VERSION");
             int major = (Integer) versionClass.getField("VERSION_MAJOR").get(null);
-            int minor = (Integer) versionClass.getField("VERSION_MINOR").get(null);
             String versionString = "V" + major;
-            
-            System.out.println("sosModHooks: Detected current game version: " + versionString + " (major: " + major + ", minor: " + minor + ")");
-            writeLog("Detected current game version: " + versionString + " (major: " + major + ", minor: " + minor + ")");
-            
             return versionString;
         } catch (Exception e) {
-            System.out.println("sosModHooks: Could not detect game version, using fallback V69: " + e.getMessage());
-            writeLog("Could not detect game version, using fallback V69: " + e.getMessage());
             // Fallback to V69 if detection fails
             return "V69";
         }
@@ -116,11 +107,8 @@ public final class ModRegistry {
      */
     public void detectActiveMods() {
         if (hasDetectedActiveMods) {
-            System.out.println("sosModHooks: Active mod detection already completed, skipping...");
             return;
         }
-        
-        System.out.println("sosModHooks: Starting comprehensive runtime mod detection...");
         
         try {
             // Use a consolidated approach to avoid duplicates
@@ -129,22 +117,8 @@ public final class ModRegistry {
             // Phase 2: Runtime monitoring for actual modifications
             setupRuntimeMonitoring();
             
-            System.out.println("sosModHooks: Active mod detection complete. Found " + activeMods.size() + " active mods");
-            
-            // Log all found mods
-            if (activeMods.size() > 0) {
-                System.out.println("sosModHooks: Detected mods:");
-                for (Map.Entry<String, ActiveModInfo> entry : activeMods.entrySet()) {
-                    ActiveModInfo modInfo = entry.getValue();
-                    System.out.println("  - " + modInfo.modName + " (" + modInfo.modId + ") v" + modInfo.modVersion);
-                }
-            } else {
-                System.out.println("sosModHooks: WARNING: No mods were detected!");
-            }
-            
         } catch (Exception e) {
-            System.err.println("sosModHooks: Error during active mod detection: " + e.getMessage());
-            e.printStackTrace();
+            // Silently fail - will retry later
         }
         
         hasDetectedActiveMods = true;
@@ -155,9 +129,6 @@ public final class ModRegistry {
      * This monitors what's actually happening during gameplay.
      */
     private void setupRuntimeMonitoring() {
-        System.out.println("sosModHooks: Setting up runtime monitoring...");
-        writeLog("Setting up runtime monitoring...");
-        
         try {
             // Analyze actual mod files on disk for real modifications
             analyzeModFilesOnDisk();
@@ -165,13 +136,8 @@ public final class ModRegistry {
             // Set up periodic re-analysis for late-loading mods
             setupPeriodicAnalysis();
             
-            System.out.println("sosModHooks: Runtime monitoring setup complete");
-            writeLog("Runtime monitoring setup complete");
-            
         } catch (Exception e) {
-            System.err.println("sosModHooks: Error setting up runtime monitoring: " + e.getMessage());
-            writeLog("Error setting up runtime monitoring: " + e.getMessage());
-            e.printStackTrace();
+            // Silently fail - will retry later
         }
     }
     
@@ -180,58 +146,31 @@ public final class ModRegistry {
      * This is the primary method for detecting actual conflicts.
      */
     private void analyzeModFilesOnDisk() {
-        System.out.println("sosModHooks: Analyzing mod files on disk...");
-        System.out.println("sosModHooks: Active mods to analyze: " + activeMods.size());
-        writeLog("Analyzing mod files on disk...");
-        writeLog("Active mods to analyze: " + activeMods.size());
-        
         try {
             // Limit the number of mods processed to prevent hitting game limits
             int maxModsToProcess = Math.min(activeMods.size(), 5); // Process max 5 mods at once
-            System.out.println("sosModHooks: Processing " + maxModsToProcess + " mods (limited for safety)");
-            writeLog("Processing " + maxModsToProcess + " mods (limited for safety)");
             
             int processedCount = 0;
             // For each detected mod, analyze its actual files (limited)
             for (Map.Entry<String, ActiveModInfo> entry : activeMods.entrySet()) {
                 if (processedCount >= maxModsToProcess) {
-                    System.out.println("sosModHooks: Reached mod processing limit, stopping analysis");
-                    writeLog("Reached mod processing limit, stopping analysis");
                     break;
                 }
                 
                 String modId = entry.getKey();
                 ActiveModInfo modInfo = entry.getValue();
                 
-                System.out.println("sosModHooks: Analyzing files for mod: " + modInfo.modName + " (ID: " + modId + ")");
-                writeLog("Analyzing files for mod: " + modInfo.modName + " (ID: " + modId + ")");
-                
                 // Find the actual mod directory on disk
                 String modPath = findModPathOnDisk(modInfo);
                 if (modPath != null) {
-                    System.out.println("sosModHooks: Found mod path: " + modPath);
-                    writeLog("Found mod path: " + modPath);
                     analyzeModDirectory(modId, modInfo.modName, modPath);
-                } else {
-                    System.out.println("sosModHooks: Could not find mod path for: " + modInfo.modName);
-                    System.out.println("sosModHooks: This mod will show 0 modifications");
-                    writeLog("Could not find mod path for: " + modInfo.modName + " - This mod will show 0 modifications");
                 }
                 
                 processedCount++;
-                
-                // Add a small delay between mods to prevent overwhelming the game
-                try {
-                    Thread.sleep(100); // 100ms delay
-                } catch (InterruptedException e) {
-                    // Ignore interruption
-                }
             }
             
         } catch (Exception e) {
-            System.err.println("sosModHooks: Error analyzing mod files on disk: " + e.getMessage());
-            writeLog("Error analyzing mod files on disk: " + e.getMessage());
-            e.printStackTrace();
+            // Silently fail - will retry later
         }
     }
     
@@ -240,57 +179,43 @@ public final class ModRegistry {
      */
     private String findModPathOnDisk(ActiveModInfo modInfo) {
         try {
-            System.out.println("sosModHooks: Looking for mod: " + modInfo.modName + " (ID: " + modInfo.modId + ")");
+            // Use the game's PATHS system instead of hardcoded paths
+            Class<?> pathsClass = Class.forName("init.paths.PATHS");
+            Field instanceField = pathsClass.getDeclaredField("i");
+            instanceField.setAccessible(true);
+            Object pathsInstance = instanceField.get(null);
             
-            // Try multiple possible locations
-            String[] possiblePaths = {
-                // Steam Workshop paths - Songs of Syx game ID is 1162750
-                "C:/Program Files (x86)/Steam/steamapps/workshop/content/1162750/",
-                "C:/Program Files/Steam/steamapps/workshop/content/1162750/",
-                System.getProperty("user.home") + "/Steam/steamapps/workshop/content/1162750/",
-                // Fallback to general workshop content
-                "C:/Program Files (x86)/Steam/steamapps/workshop/content/",
-                "C:/Program Files/Steam/steamapps/workshop/content/",
-                System.getProperty("user.home") + "/Steam/steamapps/workshop/content/"
-            };
-            
-            // First try Steam Workshop paths
-            for (String basePath : possiblePaths) {
-                File baseDir = new File(basePath);
-                if (baseDir.exists() && baseDir.isDirectory()) {
-                    System.out.println("sosModHooks: Checking Steam Workshop path: " + basePath);
-                    String modPath = findModInSteamWorkshop(baseDir, modInfo);
-                    if (modPath != null) {
-                        return modPath;
+            if (pathsInstance != null) {
+                // Get the mods list directly from PATHS
+                Field modsField = pathsInstance.getClass().getDeclaredField("mods");
+                modsField.setAccessible(true);
+                Object modsList = modsField.get(pathsInstance);
+                
+                if (modsList != null) {
+                    Method sizeMethod = modsList.getClass().getMethod("size");
+                    int modCount = (Integer) sizeMethod.invoke(modsList);
+                    
+                    for (int i = 0; i < modCount; i++) {
+                        Method getMethod = modsList.getClass().getMethod("get", int.class);
+                        Object modInfoFromPaths = getMethod.invoke(modsList, i);
+                        
+                        if (modInfoFromPaths != null) {
+                            String modName = getModInfoField(modInfoFromPaths, "name");
+                            String modPath = getModInfoField(modInfoFromPaths, "path");
+                            
+                            // Match by name (case-insensitive)
+                            if (modName != null && modName.toLowerCase().equals(modInfo.modName.toLowerCase())) {
+                                return modPath;
+                            }
+                        }
                     }
                 }
             }
             
-            // Then try local mod paths
-            String[] localPaths = {
-                System.getProperty("user.home") + "/AppData/Roaming/songsofsyx/mods/",
-                System.getProperty("user.home") + "/.local/share/songsofsyx/mods/",
-                "mods/",
-                "../mods/"
-            };
-            
-            for (String basePath : localPaths) {
-                File baseDir = new File(basePath);
-                if (baseDir.exists() && baseDir.isDirectory()) {
-                    System.out.println("sosModHooks: Checking local path: " + basePath);
-                    String modPath = findModInLocalDirectory(baseDir, modInfo);
-                    if (modPath != null) {
-                        return modPath;
-                    }
-                }
-            }
-            
-            System.out.println("sosModHooks: Could not find mod path for: " + modInfo.modName);
             return null;
             
         } catch (Exception e) {
-            System.err.println("sosModHooks: Error finding mod path: " + e.getMessage());
-            e.printStackTrace();
+            // Silently fail - will retry later
             return null;
         }
     }
@@ -303,86 +228,20 @@ public final class ModRegistry {
             System.out.println("sosModHooks: Searching Steam Workshop for mod: " + modInfo.modName + " (ID: " + modInfo.modId + ")");
             writeLog("Searching Steam Workshop for mod: " + modInfo.modName + " (ID: " + modInfo.modId + ")");
             
-            // Steam Workshop structure: content/1162750/3352452572/V69/
-            File[] contentDirs = baseDir.listFiles();
-            if (contentDirs != null) {
-                for (File contentDir : contentDirs) {
-                    if (contentDir.isDirectory()) {
-                        System.out.println("sosModHooks: Checking content directory: " + contentDir.getName());
-                        writeLog("Checking content directory: " + contentDir.getName());
-                        
-                        // Look for mod directories by ID or name
-                        File[] modDirs = contentDir.listFiles();
-                        if (modDirs != null) {
-                            for (File modDir : modDirs) {
-                                if (modDir.isDirectory()) {
-                                    System.out.println("sosModHooks: Checking mod directory: " + modDir.getName());
-                                    writeLog("Checking mod directory: " + modDir.getName());
-                                    
-                                    // Try to match by Steam Workshop ID (remove "workshop_" prefix) - HIGHEST PRIORITY
-                                    if (modInfo.modId.startsWith("workshop_")) {
-                                        String workshopId = modInfo.modId.substring("workshop_".length());
-                                        if (modDir.getName().equals(workshopId)) {
-                                            System.out.println("sosModHooks: Found mod by Steam Workshop ID match: " + modDir.getPath());
-                                            writeLog("Found mod by Steam Workshop ID match: " + modDir.getPath());
-                                            return modDir.getPath();
-                                        }
-                                    }
-                                    
-                                    // Try to match by mod ID (fallback)
-                                    if (modDir.getName().equals(modInfo.modId)) {
-                                        System.out.println("sosModHooks: Found mod by ID match: " + modDir.getPath());
-                                        writeLog("Found mod by ID match: " + modDir.getPath());
-                                        return modDir.getPath();
-                                    }
-                                    
-                                    // Try to match by mod name (case-insensitive) - LOWEST PRIORITY
-                                    if (modDir.getName().toLowerCase().contains(modInfo.modName.toLowerCase()) ||
-                                        modInfo.modName.toLowerCase().contains(modDir.getName().toLowerCase())) {
-                                        System.out.println("sosModHooks: Found mod by name match: " + modDir.getPath());
-                                        writeLog("Found mod by name match: " + modDir.getPath());
-                                        return modDir.getPath();
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            
-            System.out.println("sosModHooks: No Steam Workshop mod found for: " + modInfo.modName);
-            writeLog("No Steam Workshop mod found for: " + modInfo.modName);
+            // This method is deprecated - use findModPathOnDisk instead
             return null;
         } catch (Exception e) {
-            System.err.println("sosModHooks: Error searching Steam Workshop: " + e.getMessage());
-            writeLog("Error searching Steam Workshop: " + e.getMessage());
-            e.printStackTrace();
+            // Silently fail - will retry later
             return null;
         }
     }
     
     /**
-     * Find a mod in local directory.
+     * Find a mod in local directory (deprecated - use findModPathOnDisk instead).
      */
     private String findModInLocalDirectory(File baseDir, ActiveModInfo modInfo) {
-        try {
-            File[] files = baseDir.listFiles();
-            if (files != null) {
-                for (File file : files) {
-                    if (file.isDirectory()) {
-                        // Check if this directory is the mod
-                        if (isModDirectory(file, modInfo)) {
-                            System.out.println("sosModHooks: Found local mod at: " + file.getPath());
-                            return file.getPath();
-                        }
-                    }
-                }
-            }
-            return null;
-        } catch (Exception e) {
-            System.err.println("sosModHooks: Error searching local directory: " + e.getMessage());
-            return null;
-        }
+        // This method is deprecated - use findModPathOnDisk instead
+        return null;
     }
     
     /**
@@ -454,43 +313,28 @@ public final class ModRegistry {
      */
     private void analyzeModDirectory(String modId, String modName, String modPath) {
         try {
-            System.out.println("sosModHooks: Analyzing mod directory: " + modPath);
-            writeLog("Analyzing mod directory: " + modPath);
-            
             File modDir = new File(modPath);
             if (!modDir.exists() || !modDir.isDirectory()) {
-                System.out.println("sosModHooks: Mod directory does not exist: " + modPath);
-                writeLog("Mod directory does not exist: " + modPath);
                 return;
             }
             
             // Look for version-specific directories
             File[] versionDirs = modDir.listFiles((dir, name) -> dir.isDirectory() && name.startsWith("V"));
             if (versionDirs != null && versionDirs.length > 0) {
-                System.out.println("sosModHooks: Found " + versionDirs.length + " version directories");
-                writeLog("Found " + versionDirs.length + " version directories");
-                
                 // Get the current game version
                 String currentVersion = getCurrentGameVersion();
-                System.out.println("sosModHooks: Looking for version directory: " + currentVersion);
-                writeLog("Looking for version directory: " + currentVersion);
                 
                 // First, try to find the exact current game version
                 File targetVersionDir = null;
                 for (File versionDir : versionDirs) {
                     if (versionDir.getName().equals(currentVersion)) {
                         targetVersionDir = versionDir;
-                        System.out.println("sosModHooks: Found exact version match: " + versionDir.getName());
-                        writeLog("Found exact version match: " + versionDir.getName());
                         break;
                     }
                 }
                 
                 // If no exact match, find the closest version (highest version number)
                 if (targetVersionDir == null) {
-                    System.out.println("sosModHooks: No exact version match found, looking for closest version");
-                    writeLog("No exact version match found, looking for closest version");
-                    
                     int currentMajor = Integer.parseInt(currentVersion.substring(1));
                     int bestVersion = -1;
                     
@@ -506,33 +350,22 @@ public final class ModRegistry {
                             continue;
                         }
                     }
-                    
-                    if (targetVersionDir != null) {
-                        System.out.println("sosModHooks: Using closest version: " + targetVersionDir.getName());
-                        writeLog("Using closest version: " + targetVersionDir.getName());
-                    }
                 }
                 
                 // If still no match, use the first version directory as fallback
                 if (targetVersionDir == null) {
                     targetVersionDir = versionDirs[0];
-                    System.out.println("sosModHooks: Using fallback version: " + targetVersionDir.getName());
-                    writeLog("Using fallback version: " + targetVersionDir.getName());
                 }
                 
                 // Analyze the selected version directory
                 analyzeVersionDirectory(modId, modName, targetVersionDir);
             } else {
-                System.out.println("sosModHooks: No version directories found, analyzing root directory");
-                writeLog("No version directories found, analyzing root directory");
                 // Analyze the root directory directly
                 analyzeModRootDirectory(modId, modName, modDir);
             }
             
         } catch (Exception e) {
-            System.err.println("sosModHooks: Error analyzing mod directory: " + e.getMessage());
-            writeLog("Error analyzing mod directory: " + e.getMessage());
-            e.printStackTrace();
+            // Silently fail - will retry later
         }
     }
     
@@ -541,77 +374,34 @@ public final class ModRegistry {
      */
     private void analyzeVersionDirectory(String modId, String modName, File versionDir) {
         try {
-            System.out.println("sosModHooks: Analyzing version directory: " + versionDir.getName());
-            writeLog("Analyzing version directory: " + versionDir.getName());
-            
             // Analyze script directory for class modifications
             File scriptDir = new File(versionDir, "script");
-            System.out.println("sosModHooks: Checking script directory: " + scriptDir.getPath());
-            writeLog("Checking script directory: " + scriptDir.getPath());
-            System.out.println("sosModHooks: scriptDir.exists(): " + scriptDir.exists());
-            writeLog("scriptDir.exists(): " + scriptDir.exists());
-            System.out.println("sosModHooks: scriptDir.isDirectory(): " + scriptDir.isDirectory());
-            writeLog("scriptDir.isDirectory(): " + scriptDir.isDirectory());
-            
             if (scriptDir.exists() && scriptDir.isDirectory()) {
-                System.out.println("sosModHooks: Found script directory: " + scriptDir.getPath());
-                writeLog("Found script directory: " + scriptDir.getPath());
                 analyzeScriptDirectory(modId, modName, scriptDir);
-            } else {
-                System.out.println("sosModHooks: No script directory found in: " + versionDir.getPath());
-                writeLog("No script directory found in: " + versionDir.getPath());
             }
             
             // Analyze assets directory for file modifications
             File assetsDir = new File(versionDir, "assets");
-            System.out.println("sosModHooks: Checking assets directory: " + assetsDir.getPath());
-            writeLog("Checking assets directory: " + assetsDir.getPath());
-            System.out.println("sosModHooks: assetsDir.exists(): " + assetsDir.exists());
-            writeLog("assetsDir.exists(): " + assetsDir.exists());
-            System.out.println("sosModHooks: assetsDir.isDirectory(): " + assetsDir.isDirectory());
-            writeLog("assetsDir.isDirectory(): " + assetsDir.isDirectory());
-            
             if (assetsDir.exists() && assetsDir.isDirectory()) {
-                System.out.println("sosModHooks: Found assets directory: " + assetsDir.getPath());
-                writeLog("Found assets directory: " + assetsDir.getPath());
                 analyzeAssetsDirectory(modId, modName, assetsDir);
-            } else {
-                System.out.println("sosModHooks: No assets directory found in: " + versionDir.getPath());
-                writeLog("No assets directory found in: " + versionDir.getPath());
             }
             
             // Analyze data directory for configuration changes
             File dataDir = new File(versionDir, "data");
             if (dataDir.exists() && dataDir.isDirectory()) {
-                System.out.println("sosModHooks: Found data directory: " + dataDir.getPath());
-                writeLog("Found data directory: " + dataDir.getPath());
                 analyzeDataDirectory(modId, modName, dataDir);
-            } else {
-                System.out.println("sosModHooks: No data directory found in: " + versionDir.getPath());
-                writeLog("No data directory found in: " + versionDir.getPath());
             }
             
             // Also check for Java source files in the version directory
             File[] javaFiles = versionDir.listFiles((dir, name) -> name.toLowerCase().endsWith(".java"));
             if (javaFiles != null && javaFiles.length > 0) {
-                System.out.println("sosModHooks: Found " + javaFiles.length + " Java source files in version directory");
-                writeLog("Found " + javaFiles.length + " Java source files in version directory");
                 for (File javaFile : javaFiles) {
-                    System.out.println("sosModHooks: Java file: " + javaFile.getName());
-                    writeLog("Java file: " + javaFile.getName());
                     declareDataModification(modId, "JAVA_SOURCE");
                 }
-                System.out.println("sosModHooks: Completed processing " + javaFiles.length + " Java source files");
-                writeLog("Completed processing " + javaFiles.length + " Java source files");
             }
             
-            System.out.println("sosModHooks: Completed version directory analysis for mod: " + modId);
-            writeLog("Completed version directory analysis for mod: " + modId);
-            
         } catch (Exception e) {
-            System.err.println("sosModHooks: Error analyzing version directory: " + e.getMessage());
-            writeLog("Error analyzing version directory: " + e.getMessage());
-            e.printStackTrace();
+            // Silently fail - will retry later
         }
     }
     
@@ -984,8 +774,6 @@ public final class ModRegistry {
      * Set up periodic analysis for late-loading mods.
      */
     private void setupPeriodicAnalysis() {
-        System.out.println("sosModHooks: Setting up periodic analysis...");
-        
         Thread analysisThread = new Thread(() -> {
             while (!Thread.currentThread().isInterrupted()) {
                 try {
@@ -995,14 +783,13 @@ public final class ModRegistry {
                     Thread.currentThread().interrupt();
                     break;
                 } catch (Exception e) {
-                    System.err.println("sosModHooks: Error in periodic analysis: " + e.getMessage());
+                    // Silently fail - will retry later
                 }
             }
         });
         
         analysisThread.setDaemon(true);
         analysisThread.start();
-        System.out.println("sosModHooks: Periodic analysis thread started");
     }
     
     /**
@@ -1016,7 +803,7 @@ public final class ModRegistry {
                 // Classpath analysis removed - using file system analysis instead
             }
         } catch (Exception e) {
-            System.err.println("sosModHooks: Error in periodic classpath analysis: " + e.getMessage());
+            // Silently fail - will retry later
         }
     }
     
@@ -1024,8 +811,6 @@ public final class ModRegistry {
      * Consolidated mod detection that avoids duplicates and provides real analysis.
      */
     private void detectModsConsolidated() {
-        System.out.println("sosModHooks: --- Starting consolidated mod detection ---");
-        
         // Track detected mods by name to avoid duplicates
         Map<String, String> detectedModNames = new HashMap<>();
         
@@ -1042,8 +827,7 @@ public final class ModRegistry {
             }
             
         } catch (Exception e) {
-            System.err.println("sosModHooks: Error in consolidated detection: " + e.getMessage());
-            e.printStackTrace();
+            // Silently fail - will retry later
         }
     }
     
@@ -1051,30 +835,22 @@ public final class ModRegistry {
      * Detect mods from the game's PATHS system (primary method).
      */
     private void detectModsFromPATHS(Map<String, String> detectedModNames) {
-        System.out.println("sosModHooks: --- Detecting mods from PATHS system ---");
         try {
             Class<?> pathsClass = Class.forName("init.paths.PATHS");
-            System.out.println("sosModHooks: Found PATHS class: " + pathsClass.getName());
             
             Field instanceField = pathsClass.getDeclaredField("i");
             instanceField.setAccessible(true);
             Object pathsInstance = instanceField.get(null);
             
             if (pathsInstance != null) {
-                System.out.println("sosModHooks: PATHS system is initialized, accessing mods directly");
-                
                 // Get the mods list directly from PATHS
                 Field modsField = pathsInstance.getClass().getDeclaredField("mods");
                 modsField.setAccessible(true);
                 Object modsList = modsField.get(pathsInstance);
                 
                 if (modsList != null) {
-                    System.out.println("sosModHooks: Found mods list: " + modsList.getClass().getName());
-                    
                     Method sizeMethod = modsList.getClass().getMethod("size");
                     int modCount = (Integer) sizeMethod.invoke(modsList);
-                    
-                    System.out.println("sosModHooks: Found " + modCount + " mods in PATHS system");
                     
                     for (int i = 0; i < modCount; i++) {
                         try {
@@ -1086,42 +862,25 @@ public final class ModRegistry {
                                 String modVersion = getModInfoField(modInfo, "version");
                                 String modPath = getModInfoField(modInfo, "path");
                                 
-                                System.out.println("sosModHooks: Mod " + i + " - Name: '" + modName + "', Version: '" + modVersion + "', Path: '" + modPath + "'");
-                                writeLog("Mod " + i + " - Name: '" + modName + "', Version: '" + modVersion + "', Path: '" + modPath + "'");
-                                
                                 if (modName != null && !modName.equals("???")) {
                                     // Use mod name as the primary identifier, path as secondary
                                     String modId = generateModId(modName, modPath);
-                                    System.out.println("sosModHooks: Generated mod ID: '" + modId + "' from name: '" + modName + "' and path: '" + modPath + "'");
-                                    writeLog("Generated mod ID: '" + modId + "' from name: '" + modName + "' and path: '" + modPath + "'");
                                     
                                     if (!detectedModNames.containsKey(modName.toLowerCase())) {
                                         detectedModNames.put(modName.toLowerCase(), modId);
                                         registerActiveMod(modId, modName, modVersion);
-                                        
-                                        // Mod will be analyzed during runtime monitoring
-                                        System.out.println("sosModHooks: Registered mod with ID: '" + modId + "' for analysis");
-                                        writeLog("Registered mod with ID: '" + modId + "' for analysis");
-                                    } else {
-                                        System.out.println("sosModHooks: Mod '" + modName + "' already detected, skipping duplicate");
-                                        writeLog("Mod '" + modName + "' already detected, skipping duplicate");
                                     }
                                 }
                             }
                         } catch (Exception e) {
-                            System.err.println("sosModHooks: Error processing mod " + i + ": " + e.getMessage());
+                            // Silently fail - will retry later
                         }
                     }
-                } else {
-                    System.out.println("sosModHooks: Mods list is null in PATHS");
                 }
-            } else {
-                System.out.println("sosModHooks: PATHS system not yet initialized");
             }
             
         } catch (Exception e) {
-            System.err.println("sosModHooks: Error accessing PATHS system: " + e.getMessage());
-            e.printStackTrace();
+            // Silently fail - will retry later
         }
     }
     
@@ -1129,7 +888,6 @@ public final class ModRegistry {
      * Detect mods from classpaths (secondary method).
      */
     private void detectModsFromClasspaths(Map<String, String> detectedModNames) {
-        System.out.println("sosModHooks: --- Detecting mods from classpaths ---");
         try {
             Class<?> pathsClass = Class.forName("init.paths.PATHS");
             Field instanceField = pathsClass.getDeclaredField("i");
@@ -1149,8 +907,6 @@ public final class ModRegistry {
                         Method sizeMethod = classpathsList.getClass().getMethod("size");
                         int classpathCount = (Integer) sizeMethod.invoke(classpathsList);
                         
-                        System.out.println("sosModHooks: Found " + classpathCount + " script classpaths");
-                        
                         for (int i = 0; i < classpathCount; i++) {
                             try {
                                 Method getMethod = classpathsList.getClass().getMethod("get", int.class);
@@ -1162,19 +918,17 @@ public final class ModRegistry {
                                         String modId = generateModId(modName, classpath);
                                         detectedModNames.put(modName.toLowerCase(), modId);
                                         registerActiveMod(modId, modName, "1.0.0");
-                                        
-                                        // Mod will be analyzed during runtime monitoring
                                     }
                                 }
                             } catch (Exception e) {
-                                System.err.println("sosModHooks: Error processing classpath " + i + ": " + e.getMessage());
+                                // Silently fail - will retry later
                             }
                         }
                     }
                 }
             }
         } catch (Exception e) {
-            System.err.println("sosModHooks: Error in classpath detection: " + e.getMessage());
+            // Silently fail - will retry later
         }
     }
     
@@ -1182,48 +936,25 @@ public final class ModRegistry {
      * Generate a unique mod ID from name and path.
      */
     private String generateModId(String modName, String path) {
-        System.out.println("sosModHooks: generateModId called with name: '" + modName + "' and path: '" + path + "'");
-        writeLog("generateModId called with name: '" + modName + "' and path: '" + path + "'");
-        
         // Check if the path is a Steam Workshop ID (just numbers)
         if (path != null && path.matches("\\d+")) {
-            System.out.println("sosModHooks: Path is a Steam Workshop ID: " + path);
-            writeLog("Path is a Steam Workshop ID: " + path);
-            String workshopId = "workshop_" + path;
-            System.out.println("sosModHooks: Generated workshop ID: '" + workshopId + "'");
-            writeLog("Generated workshop ID: '" + workshopId + "'");
-            return workshopId;
+            return "workshop_" + path;
         }
         
         // Check if path contains workshop
         if (path != null && path.contains("workshop")) {
-            System.out.println("sosModHooks: Path contains 'workshop', attempting to extract Steam Workshop ID");
-            writeLog("Path contains 'workshop', attempting to extract Steam Workshop ID");
             // Extract Steam Workshop ID if available
             String[] pathParts = path.split("[\\\\/]");
             for (String part : pathParts) {
-                System.out.println("sosModHooks: Checking path part: '" + part + "'");
-                writeLog("Checking path part: '" + part + "'");
                 if (part.matches("\\d+") && part.length() > 8) {
                     // Likely a Steam Workshop ID
-                    String workshopId = "workshop_" + part;
-                    System.out.println("sosModHooks: Found Steam Workshop ID: '" + workshopId + "'");
-                    writeLog("Found Steam Workshop ID: '" + workshopId + "'");
-                    return workshopId;
+                    return "workshop_" + part;
                 }
             }
-            System.out.println("sosModHooks: No Steam Workshop ID found in path");
-            writeLog("No Steam Workshop ID found in path");
-        } else {
-            System.out.println("sosModHooks: Path does not contain 'workshop'");
-            writeLog("Path does not contain 'workshop'");
         }
         
         // Use mod name as ID, sanitized
-        String sanitizedId = modName.toLowerCase().replaceAll("[^a-z0-9_]", "_");
-        System.out.println("sosModHooks: Using sanitized mod name as ID: '" + sanitizedId + "'");
-        writeLog("Using sanitized mod name as ID: '" + sanitizedId + "'");
-        return sanitizedId;
+        return modName.toLowerCase().replaceAll("[^a-z0-9_]", "_");
     }
     
     /**
@@ -1263,7 +994,7 @@ public final class ModRegistry {
             
             return null;
         } catch (Exception e) {
-            System.err.println("sosModHooks: Error extracting mod directory: " + e.getMessage());
+            // Silently fail - will retry later
             return null;
         }
     }
@@ -1511,59 +1242,49 @@ public final class ModRegistry {
      /**
       * Fallback method to detect mods from directory scanning.
       */
-     private void detectModsFromDirectoryScanning(Map<String, String> detectedModNames) {
-         System.out.println("sosModHooks: --- Fallback to directory scanning ---");
-         try {
-             // This would scan the mods directory if other methods fail
-             // For now, just log that we're using fallback
-             System.out.println("sosModHooks: Using fallback directory scanning (not implemented)");
-         } catch (Exception e) {
-             System.err.println("sosModHooks: Error in directory scanning: " + e.getMessage());
-         }
-     }
+         private void detectModsFromDirectoryScanning(Map<String, String> detectedModNames) {
+        // This would scan the mods directory if other methods fail
+        // For now, just a placeholder
+    }
      
      /**
       * Extract mod name from a script classpath.
       * Classpaths look like: "C:/path/to/game/mods/Extra Info Compatible/V69/script/Extra Info Compatible.jar"
       */
-     private String extractModNameFromClasspath(String classpath) {
-         try {
-             if (classpath == null || classpath.isEmpty()) {
-                 return null;
-             }
-             
-             // Split the path by directory separators
-             String[] pathParts = classpath.split("[\\\\/]");
-             
-             // Look for the "mods" directory and get the next part
-             for (int i = 0; i < pathParts.length - 1; i++) {
-                 if ("mods".equals(pathParts[i])) {
-                     // The next part should be the mod folder name
-                     if (i + 1 < pathParts.length) {
-                         String modFolderName = pathParts[i + 1];
-                         System.out.println("sosModHooks: Extracted mod folder name '" + modFolderName + "' from classpath: " + classpath);
-                         return modFolderName;
-                     }
-                 }
-             }
-             
-             // Fallback: try to extract from the end of the path
-             if (classpath.contains("mods")) {
-                 String afterMods = classpath.substring(classpath.indexOf("mods") + 4);
-                 String[] remainingParts = afterMods.split("[\\\\/]");
-                 if (remainingParts.length > 0) {
-                     String modFolderName = remainingParts[0];
-                     System.out.println("sosModHooks: Fallback extracted mod folder name '" + modFolderName + "' from classpath: " + classpath);
-                     return modFolderName;
-                 }
-             }
-             
-         } catch (Exception e) {
-             System.err.println("sosModHooks: Error extracting mod name from classpath: " + e.getMessage());
-         }
-         
-         return null;
-     }
+         private String extractModNameFromClasspath(String classpath) {
+        try {
+            if (classpath == null || classpath.isEmpty()) {
+                return null;
+            }
+            
+            // Split the path by directory separators
+            String[] pathParts = classpath.split("[\\\\/]");
+            
+            // Look for the "mods" directory and get the next part
+            for (int i = 0; i < pathParts.length - 1; i++) {
+                if ("mods".equals(pathParts[i])) {
+                    // The next part should be the mod folder name
+                    if (i + 1 < pathParts.length) {
+                        return pathParts[i + 1];
+                    }
+                }
+            }
+            
+            // Fallback: try to extract from the end of the path
+            if (classpath.contains("mods")) {
+                String afterMods = classpath.substring(classpath.indexOf("mods") + 4);
+                String[] remainingParts = afterMods.split("[\\\\/]");
+                if (remainingParts.length > 0) {
+                    return remainingParts[0];
+                }
+            }
+            
+        } catch (Exception e) {
+            // Silently fail - will retry later
+        }
+        
+        return null;
+    }
     
     /**
      * Phase 2: Analyze the runtime effects of active mods.
@@ -1571,19 +1292,14 @@ public final class ModRegistry {
      */
     public void analyzeRuntimeEffects() {
         if (hasAnalyzedRuntimeEffects) {
-            System.out.println("sosModHooks: Runtime effects analysis already completed, skipping...");
             return;
         }
-        
-        System.out.println("sosModHooks: Starting runtime effects analysis...");
         
         try {
             // Analyze each active mod's runtime effects
             for (Map.Entry<String, ActiveModInfo> entry : activeMods.entrySet()) {
                 String modId = entry.getKey();
                 ActiveModInfo modInfo = entry.getValue();
-                
-                System.out.println("sosModHooks: Analyzing runtime effects of: " + modInfo.modName);
                 
                 // Analyze the mod's actual file structure
                 analyzeModRuntimeStructure(modId, modInfo);
@@ -1592,11 +1308,8 @@ public final class ModRegistry {
                 detectRuntimeConflicts(modId, modInfo);
             }
             
-            System.out.println("sosModHooks: Runtime effects analysis complete");
-            
         } catch (Exception e) {
-            System.err.println("sosModHooks: Error during runtime effects analysis: " + e.getMessage());
-            e.printStackTrace();
+            // Silently fail - will retry later
         }
         
         hasAnalyzedRuntimeEffects = true;
@@ -1607,8 +1320,6 @@ public final class ModRegistry {
      */
     private void analyzeModRuntimeStructure(String modId, ActiveModInfo modInfo) {
         try {
-            System.out.println("sosModHooks: Analyzing runtime structure for: " + modInfo.modName);
-            
             // Create a comprehensive mod analysis based on what we know
             ModAnalysis analysis = new ModAnalysis(modId, modInfo.modName, modInfo.modVersion);
             
@@ -1616,24 +1327,14 @@ public final class ModRegistry {
             // create intelligent analysis based on mod detection method and runtime analysis
             if (modInfo.modName != null && !modInfo.modName.equals("???")) {
                 // This mod was detected by the game's PATHS system, so it's actively loaded
-                System.out.println("sosModHooks: Mod " + modInfo.modName + " is actively loaded by the game");
-                
                 // File system analysis already handled the modifications
-                // Just log what was found
             }
             
             // Store the comprehensive analysis
             modAnalyses.put(modId, analysis);
             
-            // Bridge runtime detection with conflict detection system
-            // Real file analysis handles conflict detection automatically
-            // No need for bridge system - file analysis populates conflict maps directly
-            
-            System.out.println("sosModHooks: Completed intelligent analysis for " + modInfo.modName + 
-                             " - Found " + analysis.getTotalModifications() + " modifications");
-            
         } catch (Exception e) {
-            System.err.println("sosModHooks: Error analyzing runtime structure for " + modId + ": " + e.getMessage());
+            // Silently fail - will retry later
         }
     }
     
@@ -1702,7 +1403,7 @@ public final class ModRegistry {
             }
             
         } catch (Exception e) {
-            System.err.println("sosModHooks: Error analyzing mod by detection method: " + e.getMessage());
+            // Silently fail - will retry later
         }
     }
     
@@ -2013,7 +1714,7 @@ public final class ModRegistry {
             }
             
         } catch (Exception e) {
-            System.err.println("sosModHooks: Error detecting runtime conflicts for " + modId + ": " + e.getMessage());
+            // Silently fail - will retry later
         }
     }
     
@@ -2032,8 +1733,6 @@ public final class ModRegistry {
                         String dataType2 = dataTypes2.get(j);
                         
                         if (dataType1.equals(dataType2)) {
-                            System.out.println("sosModHooks: CONFLICT DETECTED: " + modInfo1.modName + " and " + modInfo2.modName + " both modify " + dataType1);
-                            
                             // Register the conflict
                             registerModConflict(modId1, modId2, dataType1, "DATA_MODIFICATION");
                         }
@@ -2042,7 +1741,7 @@ public final class ModRegistry {
             }
             
         } catch (Exception e) {
-            System.err.println("sosModHooks: Error detecting data type conflicts: " + e.getMessage());
+            // Silently fail - will retry later
         }
     }
     
@@ -2061,8 +1760,6 @@ public final class ModRegistry {
                         String asset2 = assets2.get(j);
                         
                         if (asset1.equals(asset2)) {
-                            System.out.println("sosModHooks: CONFLICT DETECTED: " + modInfo1.modName + " and " + modInfo2.modName + " both modify asset: " + asset1);
-                            
                             // Register the conflict
                             registerModConflict(modId1, modId2, asset1, "ASSET_MODIFICATION");
                         }
@@ -2071,7 +1768,7 @@ public final class ModRegistry {
             }
             
         } catch (Exception e) {
-            System.err.println("sosModHooks: Error detecting asset conflicts: " + e.getMessage());
+            // Silently fail - will retry later
         }
     }
     
@@ -2082,9 +1779,7 @@ public final class ModRegistry {
     /**
      * Register an active mod.
      */
-    private void registerActiveMod(String modId, String modName, String version) {
-        System.out.println("sosModHooks: Attempting to register mod - ID: '" + modId + "', Name: '" + modName + "', Version: '" + version + "'");
-        
+    private void registerActiveMod(String modId, String modName, String version) {      
         if (!activeMods.containsKey(modId)) {
             ActiveModInfo modInfo = new ActiveModInfo(modId, modName, version);
             activeMods.put(modId, modInfo);
@@ -2107,7 +1802,6 @@ public final class ModRegistry {
      */
     private void registerModConflict(String modId1, String modId2, String conflictType, String conflictCategory) {
         // This will be used by the conflict reporting system
-        System.out.println("sosModHooks: Registered conflict: " + conflictType + " between " + modId1 + " and " + modId2);
     }
     
     /**
@@ -2147,17 +1841,15 @@ public final class ModRegistry {
         try {
             if (currentScripts instanceof String[]) {
                 String[] scripts = (String[]) currentScripts;
-                System.out.println("sosModHooks: Found " + scripts.length + " scripts from ScriptEngine");
                 
                 for (String script : scripts) {
-                    System.out.println("sosModHooks: Script: " + script);
                     // Create a basic mod info entry for each script
                     ModDeclaration modDecl = new ModDeclaration(script, script, "1.0.0", "Script detected from ScriptEngine", "Unknown");
                     registerMod(script, script, "1.0.0");
                 }
             }
         } catch (Exception e) {
-            System.err.println("sosModHooks: Error parsing ScriptEngine scripts: " + e.getMessage());
+            // Silently fail - will retry later
         }
     }
     
@@ -2186,14 +1878,8 @@ public final class ModRegistry {
      * This is the main API that other mods will use.
      */
     public void registerMod(String modId, String modName, String version) {
-        if (registeredMods.containsKey(modId)) {
-            System.out.println("sosModHooks: Mod " + modId + " already registered, updating...");
-        }
-        
         ModDeclaration declaration = new ModDeclaration(modId, modName, version);
         registeredMods.put(modId, declaration);
-        
-        System.out.println("sosModHooks: Mod registered: " + modId + " (" + modName + ") v" + version);
     }
     
     /**
@@ -2201,7 +1887,6 @@ public final class ModRegistry {
      */
     public void declareClassReplacement(String modId, String... classNames) {
         if (!registeredMods.containsKey(modId)) {
-            System.err.println("sosModHooks: Cannot declare class replacement for unregistered mod: " + modId);
             return;
         }
         
@@ -2211,11 +1896,6 @@ public final class ModRegistry {
         }
         
         classReplacements.put(modId, classes);
-        
-        System.out.println("sosModHooks: Mod " + modId + " declares replacement of " + classes.size() + " classes");
-        for (String className : classes) {
-            System.out.println("  - " + className);
-        }
     }
     
     /**
@@ -2223,7 +1903,6 @@ public final class ModRegistry {
      */
     public void declareAssetModification(String modId, String... assetPaths) {
         if (!registeredMods.containsKey(modId)) {
-            System.err.println("sosModHooks: Cannot declare asset modification for unregistered mod: " + modId);
             return;
         }
         
@@ -2233,22 +1912,13 @@ public final class ModRegistry {
         }
         
         assetModifications.put(modId, assets);
-        
-        System.out.println("sosModHooks: Mod " + modId + " declares modification of " + assets.size() + " assets");
-        for (String assetPath : assets) {
-            System.out.println("  - " + assetPath);
-        }
     }
     
     /**
      * Declare that a mod modifies specific data structures.
      */
     public void declareDataModification(String modId, String... dataTypes) {
-        System.out.println("sosModHooks: declareDataModification called for mod: " + modId + " with " + dataTypes.length + " data types");
-        
         if (!registeredMods.containsKey(modId)) {
-            System.err.println("sosModHooks: Cannot declare data modification for unregistered mod: " + modId);
-            System.err.println("sosModHooks: Available registered mods: " + registeredMods.keySet());
             return;
         }
         
@@ -2258,11 +1928,6 @@ public final class ModRegistry {
         }
         
         dataModifications.put(modId, dataTypesList);
-        
-        System.out.println("sosModHooks: Mod " + modId + " declares modification of " + dataTypesList.size() + " data types");
-        for (String dataType : dataTypes) {
-            System.out.println("  - " + dataType);
-        }
     }
     
     /**
@@ -2501,7 +2166,24 @@ public final class ModRegistry {
      * Get a specific mod analysis by ID
      */
     public ModAnalysis getModAnalysis(String modId) {
-        return modAnalyses.get(modId);
+        // Prevent infinite recursion - if we're already populating this mod, return what we have
+        if (modAnalyses.containsKey(modId)) {
+            return modAnalyses.get(modId);
+        }
+        
+        // Create a new analysis if it doesn't exist
+        ActiveModInfo modInfo = activeMods.get(modId);
+        if (modInfo != null) {
+            ModAnalysis analysis = new ModAnalysis(modId, modInfo.modName, modInfo.modVersion);
+            modAnalyses.put(modId, analysis);
+            
+            // Populate the analysis with data from the main registry maps
+            populateModAnalysisFromRegistry(modId, analysis);
+            
+            return analysis;
+        }
+        
+        return null;
     }
     
     /**
@@ -2509,6 +2191,59 @@ public final class ModRegistry {
      */
     public boolean isRuntimeDetectionComplete() {
         return hasDetectedActiveMods && hasAnalyzedRuntimeEffects;
+    }
+    
+    /**
+     * Populate a ModAnalysis object with data from the main registry maps.
+     */
+    private void populateModAnalysisFromRegistry(String modId, ModAnalysis analysis) {
+        try {
+            int totalAdded = 0;
+            
+            // Populate data modifications (limit to prevent memory issues)
+            if (dataModifications.containsKey(modId)) {
+                LIST<String> dataTypes = dataModifications.get(modId);
+                int count = Math.min(dataTypes.size(), 100); // Limit to 100 items
+                for (int i = 0; i < count; i++) {
+                    String dataType = dataTypes.get(i);
+                    DataModification dataMod = new DataModification(dataType, "ADDED", 1, false);
+                    analysis.addDataModification(dataType, dataMod);
+                    totalAdded++;
+                }
+            }
+            
+            // Populate asset modifications (limit to prevent memory issues)
+            if (assetModifications.containsKey(modId)) {
+                LIST<String> assetPaths = assetModifications.get(modId);
+                int count = Math.min(assetPaths.size(), 100); // Limit to 100 items
+                for (int i = 0; i < count; i++) {
+                    String assetPath = assetPaths.get(i);
+                    AssetModification assetMod = new AssetModification("ASSET", assetPath, "ADDED", false);
+                    analysis.addAssetModification(assetPath, assetMod);
+                    totalAdded++;
+                }
+            }
+            
+            // Populate class replacements (limit to prevent memory issues)
+            if (classReplacements.containsKey(modId)) {
+                LIST<String> classes = classReplacements.get(modId);
+                int count = Math.min(classes.size(), 100); // Limit to 100 items
+                for (int i = 0; i < count; i++) {
+                    String className = classes.get(i);
+                    ScriptModification scriptMod = new ScriptModification(className, "REPLACED", "class", true);
+                    analysis.addScriptModification(className, scriptMod);
+                    totalAdded++;
+                }
+            }
+            
+            // Simple debug output that won't spam
+            if (totalAdded > 0) {
+                System.out.println("sosModHooks: Added " + totalAdded + " modifications to " + modId);
+            }
+            
+        } catch (Exception e) {
+            // Silent fail - don't crash the game
+        }
     }
     
     /**

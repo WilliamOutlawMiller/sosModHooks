@@ -28,8 +28,6 @@ public class ComprehensiveModOverlay {
     private int maxScrollOffset = 0;
     
     // UI state
-    private boolean isDragging = false;
-    private int dragStartX, dragStartY;
     private int panelX = 100, panelY = 100;
     private final int panelWidth = 800;
     private final int panelHeight = 600;
@@ -37,11 +35,10 @@ public class ComprehensiveModOverlay {
     // Colors and styling
     private static final int HEADER_HEIGHT = 40;
     private static final int MOD_ENTRY_HEIGHT = 60;
-    private static final int DROPDOWN_ENTRY_HEIGHT = 25;
     private static final int SCROLL_BAR_WIDTH = 20;
     
     public ComprehensiveModOverlay() {
-        System.out.println("sosModHooks: ComprehensiveModOverlay initialized");
+        // Constructor - no logging needed
     }
     
     public void toggle() {
@@ -49,7 +46,6 @@ public class ComprehensiveModOverlay {
         if (isVisible) {
             refreshModEntries();
         }
-        System.out.println("sosModHooks: Comprehensive overlay " + (isVisible ? "shown" : "hidden"));
     }
     
     public boolean isVisible() {
@@ -78,7 +74,7 @@ public class ComprehensiveModOverlay {
             renderCloseButton(r);
             
         } catch (Exception e) {
-            System.err.println("sosModHooks: Error rendering comprehensive overlay: " + e.getMessage());
+            // Silent fail - don't crash the game
         }
     }
     
@@ -189,7 +185,7 @@ public class ComprehensiveModOverlay {
             
             for (ModRegistry.FileModification fileMod : analysis.getFileModifications().values()) {
                 renderModificationEntry(r, fileMod.getFilePath(), fileMod.getModificationType(), x + 10, currentY);
-                currentY += DROPDOWN_ENTRY_HEIGHT;
+                currentY += 25;
             }
             currentY += 10;
         }
@@ -205,7 +201,7 @@ public class ComprehensiveModOverlay {
                     desc += " (COMPLETE OVERRIDE)";
                 }
                 renderModificationEntry(r, desc, assetMod.getModificationType(), x + 10, currentY);
-                currentY += DROPDOWN_ENTRY_HEIGHT;
+                currentY += 25;
             }
             currentY += 10;
         }
@@ -221,7 +217,7 @@ public class ComprehensiveModOverlay {
                     desc += " - COMPLETE OVERRIDE";
                 }
                 renderModificationEntry(r, desc, dataMod.getModificationType(), x + 10, currentY);
-                currentY += DROPDOWN_ENTRY_HEIGHT;
+                currentY += 25;
             }
             currentY += 10;
         }
@@ -237,7 +233,7 @@ public class ComprehensiveModOverlay {
                     desc += " (Custom Methods)";
                 }
                 renderModificationEntry(r, desc, scriptMod.getModificationType(), x + 10, currentY);
-                currentY += DROPDOWN_ENTRY_HEIGHT;
+                currentY += 25;
             }
             currentY += 10;
         }
@@ -249,7 +245,7 @@ public class ComprehensiveModOverlay {
             
             for (ModRegistry.RuntimeModification runtimeMod : analysis.getRuntimeModifications().values()) {
                 renderModificationEntry(r, runtimeMod.getTarget(), runtimeMod.getModificationType(), x + 10, currentY);
-                currentY += DROPDOWN_ENTRY_HEIGHT;
+                currentY += 25;
             }
             currentY += 10;
         }
@@ -262,7 +258,7 @@ public class ComprehensiveModOverlay {
             for (String conflict : analysis.getConflicts()) {
                 GCOLOR.T().WARNING.bind();
                 renderText(r, "⚠ " + conflict, x + 10, currentY, 12);
-                currentY += DROPDOWN_ENTRY_HEIGHT;
+                currentY += 25;
             }
             COLOR.unbind();
         }
@@ -345,8 +341,6 @@ public class ComprehensiveModOverlay {
                 // Toggle expansion
                 boolean currentlyExpanded = expandedMods.getOrDefault(entry.modId, false);
                 expandedMods.put(entry.modId, !currentlyExpanded);
-                
-                System.out.println("sosModHooks: Toggled mod " + entry.modName + " expansion to " + !currentlyExpanded);
                 return;
             }
             
@@ -391,32 +385,35 @@ public class ComprehensiveModOverlay {
     }
     
     private void refreshModEntries() {
-        modEntries.clear();
-        ModRegistry registry = ModRegistry.getInstance();
-        
-        for (Map.Entry<String, ModRegistry.ActiveModInfo> entry : registry.getActiveMods().entrySet()) {
-            String modId = entry.getKey();
-            ModRegistry.ActiveModInfo modInfo = entry.getValue();
+        try {
+            modEntries.clear();
+            ModRegistry registry = ModRegistry.getInstance();
             
-            ModRegistry.ModAnalysis analysis = registry.getModAnalysis(modId);
-            int modificationCount = analysis != null ? analysis.getTotalModifications() : 0;
-            
-            ModEntry modEntry = new ModEntry(modId, modInfo.modName, modInfo.modVersion, modificationCount);
-            modEntries.add(modEntry);
-        }
-        
-        // Calculate scroll limits
-        int totalHeight = modEntries.size() * MOD_ENTRY_HEIGHT;
-        for (ModEntry entry : modEntries) {
-            if (expandedMods.getOrDefault(entry.modId, false)) {
-                totalHeight += entry.getDropdownHeight();
+            for (Map.Entry<String, ModRegistry.ActiveModInfo> entry : registry.getActiveMods().entrySet()) {
+                String modId = entry.getKey();
+                ModRegistry.ActiveModInfo modInfo = entry.getValue();
+                
+                ModRegistry.ModAnalysis analysis = registry.getModAnalysis(modId);
+                int modificationCount = analysis != null ? analysis.getTotalModifications() : 0;
+                
+                ModEntry modEntry = new ModEntry(modId, modInfo.modName, modInfo.modVersion, modificationCount);
+                modEntries.add(modEntry);
             }
+            
+            // Calculate scroll limits
+            int totalHeight = modEntries.size() * MOD_ENTRY_HEIGHT;
+            for (ModEntry entry : modEntries) {
+                if (expandedMods.getOrDefault(entry.modId, false)) {
+                    totalHeight += entry.getDropdownHeight();
+                }
+            }
+            
+            maxScrollOffset = Math.max(0, totalHeight - (panelHeight - HEADER_HEIGHT - 20));
+            scrollOffset = Math.min(scrollOffset, maxScrollOffset);
+            
+        } catch (Exception e) {
+            // Silent fail - don't crash the game
         }
-        
-        maxScrollOffset = Math.max(0, totalHeight - (panelHeight - HEADER_HEIGHT - 20));
-        scrollOffset = Math.min(scrollOffset, maxScrollOffset);
-        
-        System.out.println("sosModHooks: Refreshed mod entries, found " + modEntries.size() + " mods");
     }
     
     /**
@@ -437,9 +434,10 @@ public class ComprehensiveModOverlay {
         }
         
         int getDropdownHeight() {
-            // This would be calculated based on the actual content
-            // For now, return a reasonable estimate
-            return Math.min(400, modificationCount * 25 + 100);
+            // Calculate actual height based on modification count and content
+            int baseHeight = 50; // Header and spacing
+            int modificationHeight = modificationCount * 25; // 25px per modification
+            return Math.min(400, baseHeight + modificationHeight);
         }
     }
 }
