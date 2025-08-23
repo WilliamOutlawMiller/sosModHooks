@@ -1,5 +1,0 @@
-VERSION: "${mod.version}",
-NAME: "${mod.name}",
-DESC: "${mod.description}",
-AUTHOR: "${mod.author}",
-INFO: "${mod.info}",

@@ -19,6 +19,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.List;
 
 /**
  * Main compatibility framework that detects and manages mod conflicts.
@@ -329,6 +330,11 @@ public final class ModCompatibilityFramework {
             // Show total mods detected
             renderText(r, "Total Mods Detected: " + registry.getActiveMods().size(), panelX + 10, panelY + 80, 12);
             
+            // Show debug info about modification maps
+            renderText(r, "Debug - Maps: Class(" + registry.getClassReplacements().size() + 
+                       ") Asset(" + registry.getAssetModifications().size() + 
+                       ") Data(" + registry.getDataModifications().size() + ")", panelX + 10, panelY + 95, 10);
+            
             // System Health using game's native text colors
             int healthScore = enhancementManager.getSystemHealthScore();
             String healthStatus = enhancementManager.getSystemHealthStatus();
@@ -344,35 +350,51 @@ public final class ModCompatibilityFramework {
                 util.colors.GCOLOR.T().IWORST.bind();
             }
             
-            renderText(r, "System Health: " + healthStatus + " (" + healthScore + "/100)", panelX + 10, panelY + 100, 12);
+            renderText(r, "System Health: " + healthStatus + " (" + healthScore + "/100)", panelX + 10, panelY + 110, 12);
             
             // Performance info using normal text color
             util.colors.GCOLOR.T().NORMAL.bind();
             Map<String, Long> metrics = enhancementManager.getPerformanceMetrics();
             if (metrics.containsKey("memory_percentage")) {
                 long memoryPercent = metrics.get("memory_percentage");
-                renderText(r, "Memory Usage: " + memoryPercent + "%", panelX + 10, panelY + 120, 10);
+                renderText(r, "Memory Usage: " + memoryPercent + "%", panelX + 10, panelY + 130, 10);
             }
             
             snake2d.util.color.COLOR.unbind();
         }
         
-        // Conflict detection not implemented in current version
+        /**
+         * Render conflict details in the overlay.
+         */
         private void renderConflictDetails(snake2d.Renderer r, int screenWidth, int screenHeight) {
             int panelX = screenWidth - 400 - 20;
             int panelY = 20;
             int startY = panelY + 140; // Start below the main status section
             
             ModRegistry registry = ModRegistry.getInstance();
-            // Note: Conflict detection not implemented in current version
+            snake2d.util.sets.LIST<ModConflict> conflicts = registry.detectConflicts();
+            
+            if (conflicts.isEmpty()) {
+                // No conflicts detected
+                util.colors.GCOLOR.T().NORMAL.bind();
+                renderText(r, "No conflicts detected - all mods are compatible", panelX + 10, startY, 10);
+                startY += 20;
+                renderText(r, "System is monitoring for runtime conflicts...", panelX + 10, startY, 10);
+                return;
+            }
             
             // Header using game's native heading colors
             util.colors.GCOLOR.T().H2.bind();
-            renderText(r, "Conflict Details:", panelX + 10, startY, 14);
+            renderText(r, "Runtime Conflict Detection:", panelX + 10, startY, 14);
             startY += 20;
             
-            // Show first few conflicts (limit to avoid overwhelming the UI)
-            int maxConflicts = 3; // Reduced to make room for mod details
+            // Show conflict summary
+            util.colors.GCOLOR.T().WARNING.bind();
+            renderText(r, "Found " + conflicts.size() + " conflicts based on runtime analysis", panelX + 10, startY, 12);
+            startY += 20;
+            
+            // Show first few conflicts with enhanced details
+            int maxConflicts = 4; // Increased to show more detail
             int conflictCount = 0;
             
             for (ModConflict conflict : conflicts) {
@@ -398,8 +420,8 @@ public final class ModCompatibilityFramework {
                 // Conflict description using normal text color
                 util.colors.GCOLOR.T().NORMAL.bind();
                 String description = conflict.getSummary();
-                if (description.length() > 50) {
-                    description = description.substring(0, 47) + "...";
+                if (description.length() > 60) {
+                    description = description.substring(0, 57) + "...";
                 }
                 renderText(r, "  Issue: " + description, panelX + 20, startY, 10);
                 
@@ -415,13 +437,22 @@ public final class ModCompatibilityFramework {
                 startY += 15;
             }
             
-            // Add conflict resolution advice
+            // Add enhanced conflict resolution advice
             if (conflicts.size() > 0) {
+                startY += 10;
                 util.colors.GCOLOR.T().INORMAL.bind();
                 renderText(r, "Press F10 again to see detailed mod information", panelX + 15, startY, 10);
+                startY += 15;
+                renderText(r, "Conflicts are based on runtime class loading analysis", panelX + 15, startY, 10);
+                startY += 15;
+                renderText(r, "Check console for detailed modification logs", panelX + 15, startY, 10);
             }
         }
         
+        /**
+         * Render detailed information about detected mods and their actual modifications.
+         * Shows what each mod is really modifying based on file analysis.
+         */
         private void renderModDetails(snake2d.Renderer r, int screenWidth, int screenHeight) {
             int panelX = screenWidth - 400 - 20;
             int panelY = 20;
@@ -434,12 +465,19 @@ public final class ModCompatibilityFramework {
                 // No mods detected
                 util.colors.GCOLOR.T().NORMAL.bind();
                 renderText(r, "No mods detected - scanning may not be complete", panelX + 10, startY, 10);
+                startY += 20;
+                renderText(r, "Check console for detection logs", panelX + 10, startY, 10);
                 return;
             }
             
             // Header using game's native heading colors
             util.colors.GCOLOR.T().H2.bind();
-            renderText(r, "Detected Mods:", panelX + 10, startY, 14);
+            renderText(r, "Real Mod Analysis:", panelX + 10, startY, 14);
+            startY += 20;
+            
+            // Show summary
+            util.colors.GCOLOR.T().INORMAL.bind();
+            renderText(r, "Found " + activeMods.size() + " active mods with file analysis", panelX + 10, startY, 10);
             startY += 20;
             
             // Show each mod's details
@@ -449,21 +487,35 @@ public final class ModCompatibilityFramework {
                 
                 // Mod name using normal text color
                 util.colors.GCOLOR.T().NORMAL.bind();
-                renderText(r, "• " + modInfo.modName + " (v" + modInfo.modVersion + ")", panelX + 15, startY, 12);
+                renderText(r, "• " + modInfo.modName + " (v" + modInfo.modVersion + ") [" + modId + "]", panelX + 15, startY, 12);
+                startY += 15;
+                
+                // Show modification count
+                int modCount = registry.getModificationCount(modId);
+                if (modCount > 0) {
+                    util.colors.GCOLOR.T().WARNING.bind();
+                    renderText(r, "  " + modCount + " modifications detected", panelX + 20, startY, 10);
+                } else {
+                    util.colors.GCOLOR.T().INORMAL.bind();
+                    renderText(r, "  0 modifications detected", panelX + 20, startY, 10);
+                }
                 startY += 15;
                 
                 // Show what this mod is modifying
-                showModModifications(r, panelX, startY, modId, registry);
+                startY = showModModifications(r, panelX, startY, modId, registry);
                 startY += 25; // Extra space between mods
             }
         }
         
-        private void showModModifications(snake2d.Renderer r, int panelX, int startY, String modId, ModRegistry registry) {
+        private int showModModifications(snake2d.Renderer r, int panelX, int startY, String modId, ModRegistry registry) {
+            boolean hasModifications = false;
+            
             // Show class replacements
             if (registry.getClassReplacements().containsKey(modId)) {
                 util.colors.GCOLOR.T().WARNING.bind();
                 renderText(r, "  Classes: " + getModificationsString(registry.getClassReplacements().get(modId)), panelX + 20, startY, 10);
                 startY += 15;
+                hasModifications = true;
             }
             
             // Show asset modifications
@@ -471,6 +523,7 @@ public final class ModCompatibilityFramework {
                 util.colors.GCOLOR.T().WARNING.bind();
                 renderText(r, "  Assets: " + getModificationsString(registry.getAssetModifications().get(modId)), panelX + 20, startY, 10);
                 startY += 15;
+                hasModifications = true;
             }
             
             // Show data modifications
@@ -478,6 +531,7 @@ public final class ModCompatibilityFramework {
                 util.colors.GCOLOR.T().WARNING.bind();
                 renderText(r, "  Data: " + getModificationsString(registry.getDataModifications().get(modId)), panelX + 20, startY, 10);
                 startY += 15;
+                hasModifications = true;
             }
             
             // Show dependencies
@@ -485,7 +539,23 @@ public final class ModCompatibilityFramework {
                 util.colors.GCOLOR.T().INORMAL.bind();
                 renderText(r, "  Dependencies: " + getModificationsString(registry.getDependencies().get(modId)), panelX + 20, startY, 10);
                 startY += 15;
+                hasModifications = true;
             }
+            
+            // If no modifications found, show debug info
+            if (!hasModifications) {
+                util.colors.GCOLOR.T().INORMAL.bind();
+                renderText(r, "  No modifications detected - check console logs", panelX + 20, startY, 10);
+                startY += 15;
+                
+                // Show debug info about what maps contain
+                renderText(r, "  Debug: Class maps: " + registry.getClassReplacements().size() + 
+                           ", Asset maps: " + registry.getAssetModifications().size() + 
+                           ", Data maps: " + registry.getDataModifications().size(), panelX + 20, startY, 10);
+                startY += 15;
+            }
+            
+            return startY;
         }
         
         private void renderInstructions(snake2d.Renderer r, int screenWidth, int screenHeight) {
@@ -539,5 +609,7 @@ public final class ModCompatibilityFramework {
             }
             return sb.toString();
         }
+
+        // Duplicate method and helper methods removed
     }
 }
